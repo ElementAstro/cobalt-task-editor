@@ -2,8 +2,8 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { EditorSequence } from './types';
-import { generateId, deepClone } from './utils';
+import type { EditorSequence, EditorSequenceItem, EditorCondition, EditorTrigger } from './types';
+import { generateId, deepClone, createSequenceItem, createCondition, createTrigger } from './utils';
 
 // ============================================================================
 // Types
@@ -90,24 +90,151 @@ const templateDefinitions: TemplateDefinition[] = [
   {
     id: 'template-basic-imaging',
     name: 'Basic Imaging Session',
-    description: 'Simple setup for single target imaging with cooling, focusing, and guiding',
+    description: 'Cooling, guiding and a single DSO exposure block',
+  },
+  {
+    id: 'template-dual-target',
+    name: 'Dual Target Marathon',
+    description: 'Two sequential deep sky targets with dithering and altitude checks',
+  },
+  {
+    id: 'template-meridian-monitor',
+    name: 'Meridian Flip Monitor',
+    description: 'Handles meridian flip, re-centers and resumes guiding automatically',
+  },
+  {
+    id: 'template-autofocus-dither',
+    name: 'Autofocus & Dither Loop',
+    description: 'Exposure train that autofocuses and dithers between filter changes',
+  },
+  {
+    id: 'template-calibration-suite',
+    name: 'Calibration Frames Suite',
+    description: 'Capture dark, bias, and flat frames in one run',
+  },
+  {
+    id: 'template-planetary',
+    name: 'Planetary High-Speed Session',
+    description: 'Short exposures with derotation and ROI stacking prep',
+  },
+  {
+    id: 'template-mosaic',
+    name: 'Four-Tile Mosaic',
+    description: 'Grid slew and capture across four mosaic tiles',
   },
   {
     id: 'template-startup',
     name: 'Startup Routine',
-    description: 'Equipment initialization and preparation',
-  },
-  {
-    id: 'template-shutdown',
-    name: 'Shutdown Routine',
-    description: 'Safe equipment shutdown and parking',
+    description: 'Connect, cool, unpark and prep like NINA defaults',
   },
   {
     id: 'template-flat-capture',
     name: 'Flat Frame Capture',
     description: 'Automated flat frame acquisition sequence',
   },
+  {
+    id: 'template-shutdown',
+    name: 'Shutdown Routine',
+    description: 'Safe equipment shutdown and parking',
+  },
 ];
+
+type ItemOverride = Partial<Omit<EditorSequenceItem, 'data'>> & { data?: Record<string, unknown> };
+type ConditionOverride = Partial<Omit<EditorCondition, 'data'>> & { data?: Record<string, unknown> };
+type TriggerOverride = Partial<Omit<EditorTrigger, 'data'>> & { data?: Record<string, unknown> };
+
+function buildItem(type: string, overrides: ItemOverride = {}): EditorSequenceItem {
+  const base = createSequenceItem(type);
+  return {
+    ...base,
+    ...overrides,
+    data: overrides.data ? { ...base.data, ...overrides.data } : base.data,
+  };
+}
+
+function buildCondition(type: string, overrides: ConditionOverride = {}): EditorCondition {
+  const base = createCondition(type);
+  return {
+    ...base,
+    ...overrides,
+    data: overrides.data ? { ...base.data, ...overrides.data } : base.data,
+  };
+}
+
+function buildTrigger(type: string, overrides: TriggerOverride = {}): EditorTrigger {
+  const base = createTrigger(type);
+  return {
+    ...base,
+    ...overrides,
+    data: overrides.data ? { ...base.data, ...overrides.data } : base.data,
+  };
+}
+
+const CONTAINER_TYPES = {
+  SEQUENTIAL: 'NINA.Sequencer.Container.SequentialContainer, NINA.Sequencer',
+  DEEP_SKY: 'NINA.Sequencer.Container.DeepSkyObjectContainer, NINA.Sequencer',
+} as const;
+
+const ITEM_TYPES = {
+  COOL_CAMERA: 'NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer',
+  WARM_CAMERA: 'NINA.Sequencer.SequenceItem.Camera.WarmCamera, NINA.Sequencer',
+  START_GUIDING: 'NINA.Sequencer.SequenceItem.Guider.StartGuiding, NINA.Sequencer',
+  STOP_GUIDING: 'NINA.Sequencer.SequenceItem.Guider.StopGuiding, NINA.Sequencer',
+  DITHER: 'NINA.Sequencer.SequenceItem.Guider.Dither, NINA.Sequencer',
+  SWITCH_FILTER: 'NINA.Sequencer.SequenceItem.FilterWheel.SwitchFilter, NINA.Sequencer',
+  TAKE_MANY_EXPOSURES: 'NINA.Sequencer.SequenceItem.Imaging.TakeManyExposures, NINA.Sequencer',
+  RUN_AUTOFOCUS: 'NINA.Sequencer.SequenceItem.Autofocus.RunAutofocus, NINA.Sequencer',
+  UNPARK_SCOPE: 'NINA.Sequencer.SequenceItem.Telescope.UnparkScope, NINA.Sequencer',
+  PARK_SCOPE: 'NINA.Sequencer.SequenceItem.Telescope.ParkScope, NINA.Sequencer',
+  SLEW_TO_RA_DEC: 'NINA.Sequencer.SequenceItem.Telescope.SlewScopeToRaDec, NINA.Sequencer',
+  CENTER: 'NINA.Sequencer.SequenceItem.Platesolving.Center, NINA.Sequencer',
+  MOVE_ROTATOR_ABSOLUTE: 'NINA.Sequencer.SequenceItem.Rotator.MoveRotatorAbsolute, NINA.Sequencer',
+  TOGGLE_LIGHT: 'NINA.Sequencer.SequenceItem.FlatDevice.ToggleLight, NINA.Sequencer',
+  SET_BRIGHTNESS: 'NINA.Sequencer.SequenceItem.FlatDevice.SetBrightness, NINA.Sequencer',
+  EXTERNAL_SCRIPT: 'NINA.Sequencer.SequenceItem.Utility.ExternalScript, NINA.Sequencer',
+  CONNECT_EQUIPMENT: 'NINA.Sequencer.SequenceItem.Connect.ConnectEquipment, NINA.Sequencer',
+  DISCONNECT_EQUIPMENT: 'NINA.Sequencer.SequenceItem.Connect.DisconnectEquipment, NINA.Sequencer',
+  OPEN_DOME_SHUTTER: 'NINA.Sequencer.SequenceItem.Dome.OpenDomeShutter, NINA.Sequencer',
+  CLOSE_DOME_SHUTTER: 'NINA.Sequencer.SequenceItem.Dome.CloseDomeShutter, NINA.Sequencer',
+  PARK_DOME: 'NINA.Sequencer.SequenceItem.Dome.ParkDome, NINA.Sequencer',
+} as const;
+
+const CONDITION_TYPES = {
+  LOOP: 'NINA.Sequencer.Conditions.LoopCondition, NINA.Sequencer',
+  ALTITUDE: 'NINA.Sequencer.Conditions.AltitudeCondition, NINA.Sequencer',
+} as const;
+
+const TRIGGER_TYPES = {
+  MERIDIAN_FLIP: 'NINA.Sequencer.Trigger.MeridianFlip.MeridianFlipTrigger, NINA.Sequencer',
+  CENTER_AFTER_DRIFT: 'NINA.Sequencer.Trigger.Platesolving.CenterAfterDriftTrigger, NINA.Sequencer',
+  RESTORE_GUIDING: 'NINA.Sequencer.Trigger.Guider.RestoreGuiding, NINA.Sequencer',
+  AUTOFOCUS_AFTER_EXPOSURES: 'NINA.Sequencer.Trigger.Autofocus.AutofocusAfterExposures, NINA.Sequencer',
+} as const;
+
+const exposureBlock = (title: string, exposureTime: number, filter: string, count: number) =>
+  buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+    name: title,
+    items: [
+      buildItem(ITEM_TYPES.SWITCH_FILTER, {
+        data: { FilterName: filter },
+      }),
+      buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, {
+        data: {
+          ExposureTime: exposureTime,
+          Gain: 100,
+          Offset: 10,
+          ImageType: 'LIGHT',
+          TotalExposureCount: count,
+          Binning: { X: 1, Y: 1 },
+        },
+      }),
+    ],
+    triggers: [
+      buildTrigger(TRIGGER_TYPES.AUTOFOCUS_AFTER_EXPOSURES, {
+        data: { ExposureInterval: 10 },
+      }),
+    ],
+  });
 
 // Generate template sequence on demand
 function generateTemplateSequence(templateId: string): EditorSequence {
@@ -117,31 +244,224 @@ function generateTemplateSequence(templateId: string): EditorSequence {
         id: generateId(),
         title: 'Basic Imaging Session',
         startItems: [
-          { id: generateId(), type: 'CoolCamera', name: 'Cool Camera', category: 'Camera', icon: 'Thermometer', status: 'CREATED', data: { Temperature: -10, Duration: 600 } },
-          { id: generateId(), type: 'UnparkScope', name: 'Unpark Telescope', category: 'Telescope', icon: 'Telescope', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'StartGuiding', name: 'Start Guiding', category: 'Guider', icon: 'Crosshair', status: 'CREATED', data: { ForceCalibration: false } },
+          buildItem(ITEM_TYPES.COOL_CAMERA, { data: { Temperature: -10, Duration: 600 } }),
+          buildItem(ITEM_TYPES.UNPARK_SCOPE),
+          buildItem(ITEM_TYPES.START_GUIDING, { data: { ForceCalibration: false } }),
         ],
         targetItems: [
           {
-            id: generateId(),
-            type: 'DeepSkyObjectContainer',
-            name: 'Deep Sky Object',
-            category: 'Container',
-            icon: 'Star',
-            status: 'CREATED',
-            isExpanded: true,
-            data: { Target: { name: 'M31', ra: { hours: 0, minutes: 42, seconds: 44 }, dec: { degrees: 41, minutes: 16, seconds: 9, negative: false }, rotation: 0 } },
-            items: [
-              { id: generateId(), type: 'TakeManyExposures', name: 'Take Many Exposures', category: 'Imaging', icon: 'Camera', status: 'CREATED', data: { ExposureTime: 300, Gain: 100, Offset: 10, ImageType: 'LIGHT', TotalExposureCount: 20, Binning: { X: 1, Y: 1 } } },
-            ],
-            conditions: [{ id: generateId(), type: 'LoopCondition', name: 'Loop', category: 'Loop', data: { Iterations: 20, CompletedIterations: 0 } }],
-            triggers: [],
+            ...buildItem(CONTAINER_TYPES.DEEP_SKY, {
+              name: 'Deep Sky Object',
+              data: {
+                Target: {
+                  name: 'M31',
+                  ra: { hours: 0, minutes: 42, seconds: 44 },
+                  dec: { degrees: 41, minutes: 16, seconds: 9, negative: false },
+                  rotation: 0,
+                },
+              },
+              items: [
+                buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, {
+                  data: {
+                    ExposureTime: 300,
+                    Gain: 100,
+                    Offset: 10,
+                    ImageType: 'LIGHT',
+                    TotalExposureCount: 20,
+                    Binning: { X: 1, Y: 1 },
+                  },
+                }),
+              ],
+              conditions: [
+                buildCondition(CONDITION_TYPES.LOOP, {
+                  data: { Iterations: 20, CompletedIterations: 0 },
+                }),
+              ],
+              triggers: [],
+            }),
           },
         ],
         endItems: [
-          { id: generateId(), type: 'StopGuiding', name: 'Stop Guiding', category: 'Guider', icon: 'Crosshair', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'WarmCamera', name: 'Warm Camera', category: 'Camera', icon: 'Thermometer', status: 'CREATED', data: { Duration: 600 } },
-          { id: generateId(), type: 'ParkScope', name: 'Park Telescope', category: 'Telescope', icon: 'Telescope', status: 'CREATED', data: {} },
+          buildItem(ITEM_TYPES.STOP_GUIDING),
+          buildItem(ITEM_TYPES.WARM_CAMERA, { data: { Duration: 600 } }),
+          buildItem(ITEM_TYPES.PARK_SCOPE),
+        ],
+        globalTriggers: [],
+      };
+    case 'template-dual-target':
+      return {
+        id: generateId(),
+        title: 'Dual Target Marathon',
+        startItems: [
+          buildItem(ITEM_TYPES.COOL_CAMERA, { data: { Temperature: -15, Duration: 900 } }),
+          buildItem(ITEM_TYPES.UNPARK_SCOPE),
+          buildItem(ITEM_TYPES.START_GUIDING, { data: { ForceCalibration: true } }),
+        ],
+        targetItems: [
+          {
+            ...buildItem(CONTAINER_TYPES.DEEP_SKY, {
+              name: 'Target A',
+              data: { Target: { name: 'NGC 7000' } },
+              conditions: [
+                buildCondition(CONDITION_TYPES.ALTITUDE, {
+                  name: 'Altitude > 35°',
+                  data: { Altitude: 35 },
+                }),
+              ],
+            }),
+            items: [
+              exposureBlock('Hydrogen Alpha Block', 600, 'Ha', 12),
+            ],
+          },
+          {
+            ...buildItem(CONTAINER_TYPES.DEEP_SKY, {
+              name: 'Target B',
+              data: { Target: { name: 'IC 1396' } },
+              conditions: [
+                buildCondition(CONDITION_TYPES.ALTITUDE, {
+                  name: 'Altitude > 30°',
+                  data: { Altitude: 30 },
+                }),
+              ],
+            }),
+            items: [
+              exposureBlock('OIII Block', 480, 'OIII', 18),
+            ],
+          },
+        ],
+        endItems: [
+          buildItem(ITEM_TYPES.STOP_GUIDING),
+          buildItem(ITEM_TYPES.PARK_SCOPE),
+        ],
+        globalTriggers: [
+          buildTrigger(TRIGGER_TYPES.MERIDIAN_FLIP, { data: { PauseGuiding: true } }),
+        ],
+      };
+    case 'template-meridian-monitor':
+      return {
+        id: generateId(),
+        title: 'Meridian Flip Monitor',
+        startItems: [
+          buildItem(ITEM_TYPES.COOL_CAMERA, { data: { Temperature: -10 } }),
+          buildItem(ITEM_TYPES.START_GUIDING, { data: { ForceCalibration: false } }),
+        ],
+        targetItems: [
+          buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+            name: 'Flip Friendly Imaging',
+            items: [
+              buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, {
+                name: 'Expose Before Flip',
+                data: { ExposureTime: 300, TotalExposureCount: 10, ImageType: 'LIGHT', Binning: { X: 1, Y: 1 } },
+              }),
+            ],
+            triggers: [
+              buildTrigger(TRIGGER_TYPES.MERIDIAN_FLIP, { data: { PauseGuiding: true } }),
+              buildTrigger(TRIGGER_TYPES.CENTER_AFTER_DRIFT, { data: { DriftLimit: 8 } }),
+              buildTrigger(TRIGGER_TYPES.RESTORE_GUIDING),
+            ],
+          }),
+        ],
+        endItems: [
+          buildItem(ITEM_TYPES.STOP_GUIDING),
+          buildItem(ITEM_TYPES.WARM_CAMERA, { data: { Duration: 900 } }),
+        ],
+        globalTriggers: [],
+      };
+    case 'template-autofocus-dither':
+      return {
+        id: generateId(),
+        title: 'Autofocus & Dither Loop',
+        startItems: [
+          buildItem(ITEM_TYPES.COOL_CAMERA, { data: { Temperature: -20 } }),
+          buildItem(ITEM_TYPES.RUN_AUTOFOCUS, { name: 'Initial Autofocus' }),
+        ],
+        targetItems: [
+          buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+            name: 'Filters Loop',
+            items: [
+              exposureBlock('Red Filter Block', 180, 'R', 15),
+              buildItem(ITEM_TYPES.DITHER, { name: 'Dither After Block', data: { Settle: 8 } }),
+              exposureBlock('Green Filter Block', 180, 'G', 15),
+              buildItem(ITEM_TYPES.RUN_AUTOFOCUS, { name: 'Autofocus Mid Session' }),
+              exposureBlock('Blue Filter Block', 180, 'B', 15),
+            ],
+          }),
+        ],
+        endItems: [
+          buildItem(ITEM_TYPES.STOP_GUIDING),
+        ],
+        globalTriggers: [],
+      };
+    case 'template-calibration-suite':
+      return {
+        id: generateId(),
+        title: 'Calibration Frames Suite',
+        startItems: [
+          buildItem(ITEM_TYPES.TOGGLE_LIGHT, { name: 'Turn On Flat Panel', data: { OnOff: true } }),
+        ],
+        targetItems: [
+          buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+            name: 'Calibration Blocks',
+            items: [
+              buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, { name: 'Bias Frames', data: { ExposureTime: 0.001, ImageType: 'BIAS', TotalExposureCount: 40 } }),
+              buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, { name: 'Dark Frames', data: { ExposureTime: 300, ImageType: 'DARK', TotalExposureCount: 20 } }),
+              buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, { name: 'Flat Frames', data: { ExposureTime: 3, ImageType: 'FLAT', TotalExposureCount: 30 } }),
+            ],
+          }),
+        ],
+        endItems: [
+          buildItem(ITEM_TYPES.TOGGLE_LIGHT, { name: 'Turn Off Flat Panel', data: { OnOff: false } }),
+        ],
+        globalTriggers: [],
+      };
+    case 'template-planetary':
+      return {
+        id: generateId(),
+        title: 'Planetary High-Speed Session',
+        startItems: [
+          buildItem(ITEM_TYPES.COOL_CAMERA, { data: { Temperature: 0 } }),
+          buildItem(ITEM_TYPES.MOVE_ROTATOR_ABSOLUTE, { name: 'Set Derotation Angle', data: { Position: 45 } }),
+        ],
+        targetItems: [
+          buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+            name: 'Capture & Stack',
+            items: [
+              buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, { name: 'High-speed Capture', data: { ExposureTime: 0.02, ImageType: 'SNAPSHOT', TotalExposureCount: 5000, RegionOfInterest: '320x240' } }),
+              buildItem(ITEM_TYPES.EXTERNAL_SCRIPT, { name: 'Run Stacking Script', data: { ScriptPath: 'WinJUPOS.ps1' } }),
+            ],
+          }),
+        ],
+        endItems: [
+          buildItem(ITEM_TYPES.WARM_CAMERA, { data: { Duration: 600 } }),
+        ],
+        globalTriggers: [],
+      };
+    case 'template-mosaic':
+      return {
+        id: generateId(),
+        title: 'Four-Tile Mosaic',
+        startItems: [
+          buildItem(ITEM_TYPES.COOL_CAMERA, { data: { Temperature: -12 } }),
+          buildItem(ITEM_TYPES.START_GUIDING),
+        ],
+        targetItems: [
+          buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+            name: 'Mosaic Grid',
+            items: ['Tile 1', 'Tile 2', 'Tile 3', 'Tile 4'].map((label, idx) =>
+              buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+                name: label,
+                items: [
+                  buildItem(ITEM_TYPES.SLEW_TO_RA_DEC, { name: 'Slew to Tile', data: { TileIndex: idx + 1 } }),
+                  buildItem(ITEM_TYPES.CENTER, { name: 'Center Tile' }),
+                  buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, { name: 'Expose Tile', data: { ExposureTime: 240, ImageType: 'LIGHT', TotalExposureCount: 15 } }),
+                ],
+              })
+            ),
+          }),
+        ],
+        endItems: [
+          buildItem(ITEM_TYPES.STOP_GUIDING),
+          buildItem(ITEM_TYPES.PARK_SCOPE),
         ],
         globalTriggers: [],
       };
@@ -150,10 +470,10 @@ function generateTemplateSequence(templateId: string): EditorSequence {
         id: generateId(),
         title: 'Startup Routine',
         startItems: [
-          { id: generateId(), type: 'ConnectEquipment', name: 'Connect Equipment', category: 'Connect', icon: 'Plug', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'CoolCamera', name: 'Cool Camera', category: 'Camera', icon: 'Thermometer', status: 'CREATED', data: { Temperature: -10, Duration: 600 } },
-          { id: generateId(), type: 'UnparkScope', name: 'Unpark Telescope', category: 'Telescope', icon: 'Telescope', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'OpenDomeShutter', name: 'Open Dome Shutter', category: 'Dome', icon: 'Home', status: 'CREATED', data: {} },
+          buildItem(ITEM_TYPES.CONNECT_EQUIPMENT),
+          buildItem(ITEM_TYPES.COOL_CAMERA, { data: { Temperature: -10, Duration: 600 } }),
+          buildItem(ITEM_TYPES.UNPARK_SCOPE),
+          buildItem(ITEM_TYPES.OPEN_DOME_SHUTTER),
         ],
         targetItems: [],
         endItems: [],
@@ -166,12 +486,12 @@ function generateTemplateSequence(templateId: string): EditorSequence {
         startItems: [],
         targetItems: [],
         endItems: [
-          { id: generateId(), type: 'StopGuiding', name: 'Stop Guiding', category: 'Guider', icon: 'Crosshair', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'WarmCamera', name: 'Warm Camera', category: 'Camera', icon: 'Thermometer', status: 'CREATED', data: { Duration: 600 } },
-          { id: generateId(), type: 'ParkScope', name: 'Park Telescope', category: 'Telescope', icon: 'Telescope', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'CloseDomeShutter', name: 'Close Dome Shutter', category: 'Dome', icon: 'Home', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'ParkDome', name: 'Park Dome', category: 'Dome', icon: 'Home', status: 'CREATED', data: {} },
-          { id: generateId(), type: 'DisconnectEquipment', name: 'Disconnect Equipment', category: 'Connect', icon: 'Plug', status: 'CREATED', data: {} },
+          buildItem(ITEM_TYPES.STOP_GUIDING),
+          buildItem(ITEM_TYPES.WARM_CAMERA, { data: { Duration: 600 } }),
+          buildItem(ITEM_TYPES.PARK_SCOPE),
+          buildItem(ITEM_TYPES.CLOSE_DOME_SHUTTER),
+          buildItem(ITEM_TYPES.PARK_DOME),
+          buildItem(ITEM_TYPES.DISCONNECT_EQUIPMENT),
         ],
         globalTriggers: [],
       };
@@ -180,28 +500,26 @@ function generateTemplateSequence(templateId: string): EditorSequence {
         id: generateId(),
         title: 'Flat Frame Capture',
         startItems: [
-          { id: generateId(), type: 'SetBrightness', name: 'Set Panel Brightness', category: 'FlatDevice', icon: 'Sun', status: 'CREATED', data: { Brightness: 50 } },
-          { id: generateId(), type: 'ToggleLight', name: 'Turn On Light', category: 'FlatDevice', icon: 'Lightbulb', status: 'CREATED', data: { OnOff: true } },
+          buildItem(ITEM_TYPES.SET_BRIGHTNESS, { name: 'Set Panel Brightness', data: { Brightness: 50 } }),
+          buildItem(ITEM_TYPES.TOGGLE_LIGHT, { name: 'Turn On Light', data: { OnOff: true } }),
         ],
         targetItems: [
           {
-            id: generateId(),
-            type: 'SequentialContainer',
-            name: 'Flat Frames',
-            category: 'Container',
-            icon: 'Layers',
-            status: 'CREATED',
-            isExpanded: true,
-            data: {},
-            items: [
-              { id: generateId(), type: 'TakeManyExposures', name: 'Take Flat Frames', category: 'Imaging', icon: 'Camera', status: 'CREATED', data: { ExposureTime: 2, Gain: 0, Offset: 10, ImageType: 'FLAT', TotalExposureCount: 30, Binning: { X: 1, Y: 1 } } },
-            ],
-            conditions: [],
-            triggers: [],
+            ...buildItem(CONTAINER_TYPES.SEQUENTIAL, {
+              name: 'Flat Frames',
+              items: [
+                buildItem(ITEM_TYPES.TAKE_MANY_EXPOSURES, {
+                  name: 'Take Flat Frames',
+                  data: { ExposureTime: 2, Gain: 0, Offset: 10, ImageType: 'FLAT', TotalExposureCount: 30, Binning: { X: 1, Y: 1 } },
+                }),
+              ],
+              conditions: [],
+              triggers: [],
+            }),
           },
         ],
         endItems: [
-          { id: generateId(), type: 'ToggleLight', name: 'Turn Off Light', category: 'FlatDevice', icon: 'Lightbulb', status: 'CREATED', data: { OnOff: false } },
+          buildItem(ITEM_TYPES.TOGGLE_LIGHT, { name: 'Turn Off Light', data: { OnOff: false } }),
         ],
         globalTriggers: [],
       };

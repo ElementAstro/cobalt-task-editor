@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { HelpCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useI18n, getItemDescriptionKey, getCategoryKey } from '@/lib/i18n';
 
 // Input Components
@@ -36,15 +37,15 @@ function TextInput({ label, value, onChange, placeholder, multiline }: TextInput
   const id = `input-${label.toLowerCase().replace(/\s+/g, '-')}`;
   
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+    <div className="space-y-1 sm:space-y-1.5">
+      <Label htmlFor={id} className="text-[11px] sm:text-xs text-muted-foreground">{label}</Label>
       {multiline ? (
         <textarea
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow"
+          className="w-full px-2.5 sm:px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow min-h-[80px]"
           rows={3}
           aria-label={label}
         />
@@ -55,7 +56,7 @@ function TextInput({ label, value, onChange, placeholder, multiline }: TextInput
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="bg-background border-input"
+          className="bg-background border-input h-9 sm:h-10 text-sm"
           aria-label={label}
         />
       )}
@@ -77,9 +78,9 @@ function NumberInput({ label, value, onChange, min, max, step = 1, unit }: Numbe
   const id = `input-${label.toLowerCase().replace(/\s+/g, '-')}`;
   
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
-      <div className="flex items-center gap-2">
+    <div className="space-y-1 sm:space-y-1.5">
+      <Label htmlFor={id} className="text-[11px] sm:text-xs text-muted-foreground">{label}</Label>
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <Input
           id={id}
           type="number"
@@ -88,18 +89,18 @@ function NumberInput({ label, value, onChange, min, max, step = 1, unit }: Numbe
           min={min}
           max={max}
           step={step}
-          className="flex-1 bg-background border-input"
+          className="flex-1 bg-background border-input h-9 sm:h-10 text-sm"
           aria-label={label}
         />
         {unit && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="text-xs text-muted-foreground cursor-help flex items-center gap-1">
+              <span className="text-[10px] sm:text-xs text-muted-foreground cursor-help flex items-center gap-0.5 sm:gap-1 shrink-0">
                 {unit}
-                <HelpCircle className="w-3 h-3" />
+                <HelpCircle className="w-3 h-3 hidden sm:inline" />
               </span>
             </TooltipTrigger>
-            <TooltipContent side="right">
+            <TooltipContent side="right" className="hidden sm:block">
               <p className="text-xs">Unit: {unit}</p>
             </TooltipContent>
           </Tooltip>
@@ -118,15 +119,15 @@ interface SelectInputProps {
 
 function SelectInput({ label, value, onChange, options }: SelectInputProps) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="space-y-1 sm:space-y-1.5">
+      <Label className="text-[11px] sm:text-xs text-muted-foreground">{label}</Label>
       <Select value={String(value)} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-background border-input">
+        <SelectTrigger className="w-full bg-background border-input h-9 sm:h-10 text-sm">
           <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-[50vh]">
           {options.map((opt) => (
-            <SelectItem key={opt.value} value={String(opt.value)}>
+            <SelectItem key={opt.value} value={String(opt.value)} className="text-sm">
               {opt.label}
             </SelectItem>
           ))}
@@ -136,6 +137,34 @@ function SelectInput({ label, value, onChange, options }: SelectInputProps) {
   );
 }
 
+// Switch Input for boolean values
+interface SwitchInputProps {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  description?: string;
+}
+
+function SwitchInput({ label, checked, onChange, description }: SwitchInputProps) {
+  const id = `switch-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  
+  return (
+    <div className="flex items-center justify-between gap-2 py-1">
+      <div className="space-y-0.5">
+        <Label htmlFor={id} className="text-[11px] sm:text-xs text-foreground cursor-pointer">{label}</Label>
+        {description && (
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <Switch
+        id={id}
+        checked={checked}
+        onCheckedChange={onChange}
+        aria-label={label}
+      />
+    </div>
+  );
+}
 
 // Coordinate Input
 interface CoordinateInputProps {
@@ -158,36 +187,36 @@ interface CoordinateInputProps {
 function CoordinateInput({ label, ra, dec, onChange, translations }: CoordinateInputProps) {
   return (
     <div className="space-y-2">
-      <label className="text-xs text-muted-foreground">{label}</label>
+      <label className="text-[11px] sm:text-xs text-muted-foreground">{label}</label>
       
-      <div className="space-y-2">
-        <div className="text-xs text-muted-foreground">{translations.rightAscension}</div>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
+      <div className="space-y-2 sm:space-y-3">
+        <div className="text-[11px] sm:text-xs text-muted-foreground font-medium">{translations.rightAscension}</div>
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+          <div className="space-y-0.5">
             <input
               type="number"
               value={ra.hours}
               onChange={(e) => onChange({ ...ra, hours: parseInt(e.target.value) || 0 }, dec)}
               min={0}
               max={23}
-              className="w-full px-2 py-1 text-sm bg-background border border-input rounded"
+              className="w-full px-2 py-1.5 sm:py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="h"
             />
-            <span className="text-xs text-muted-foreground">{translations.raHours}</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground">{translations.raHours}</span>
           </div>
-          <div>
+          <div className="space-y-0.5">
             <input
               type="number"
               value={ra.minutes}
               onChange={(e) => onChange({ ...ra, minutes: parseInt(e.target.value) || 0 }, dec)}
               min={0}
               max={59}
-              className="w-full px-2 py-1 text-sm bg-background border border-input rounded"
+              className="w-full px-2 py-1.5 sm:py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="m"
             />
-            <span className="text-xs text-muted-foreground">{translations.raMinutes}</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground">{translations.raMinutes}</span>
           </div>
-          <div>
+          <div className="space-y-0.5">
             <input
               type="number"
               value={ra.seconds}
@@ -195,50 +224,50 @@ function CoordinateInput({ label, ra, dec, onChange, translations }: CoordinateI
               min={0}
               max={59.99}
               step={0.1}
-              className="w-full px-2 py-1 text-sm bg-background border border-input rounded"
+              className="w-full px-2 py-1.5 sm:py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="s"
             />
-            <span className="text-xs text-muted-foreground">{translations.raSeconds}</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground">{translations.raSeconds}</span>
           </div>
         </div>
         
-        <div className="text-xs text-muted-foreground">{translations.declination}</div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="text-[11px] sm:text-xs text-muted-foreground font-medium">{translations.declination}</div>
+        <div className="grid grid-cols-4 gap-1 sm:gap-2">
           <div>
             <select
               value={dec.negative ? '-' : '+'}
               onChange={(e) => onChange(ra, { ...dec, negative: e.target.value === '-' })}
-              className="w-full px-2 py-1 text-sm bg-background border border-input rounded"
+              className="w-full px-1.5 sm:px-2 py-1.5 sm:py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="+">+</option>
               <option value="-">-</option>
             </select>
           </div>
-          <div>
+          <div className="space-y-0.5">
             <input
               type="number"
               value={dec.degrees}
               onChange={(e) => onChange(ra, { ...dec, degrees: parseInt(e.target.value) || 0 })}
               min={0}
               max={90}
-              className="w-full px-2 py-1 text-sm bg-background border border-input rounded"
+              className="w-full px-2 py-1.5 sm:py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="°"
             />
-            <span className="text-xs text-muted-foreground">{translations.decDegrees}</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground">{translations.decDegrees}</span>
           </div>
-          <div>
+          <div className="space-y-0.5">
             <input
               type="number"
               value={dec.minutes}
               onChange={(e) => onChange(ra, { ...dec, minutes: parseInt(e.target.value) || 0 })}
               min={0}
               max={59}
-              className="w-full px-2 py-1 text-sm bg-background border border-input rounded"
+              className="w-full px-2 py-1.5 sm:py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="'"
             />
-            <span className="text-xs text-muted-foreground">{translations.decMinutes}</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground">{translations.decMinutes}</span>
           </div>
-          <div>
+          <div className="space-y-0.5">
             <input
               type="number"
               value={dec.seconds}
@@ -246,10 +275,10 @@ function CoordinateInput({ label, ra, dec, onChange, translations }: CoordinateI
               min={0}
               max={59.99}
               step={0.1}
-              className="w-full px-2 py-1 text-sm bg-background border border-input rounded"
+              className="w-full px-2 py-1.5 sm:py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder='"'
             />
-            <span className="text-xs text-muted-foreground">{translations.decSeconds}</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground">{translations.decSeconds}</span>
           </div>
         </div>
       </div>
@@ -270,7 +299,7 @@ function ExposureProperties({ item, onUpdate }: ItemPropertiesProps) {
   }, [item.data, onUpdate]);
   
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5 sm:space-y-3">
       <NumberInput
         label={t.properties.exposureTime}
         value={item.data.ExposureTime as number || 0}
@@ -279,27 +308,27 @@ function ExposureProperties({ item, onUpdate }: ItemPropertiesProps) {
         step={0.1}
         unit={t.common.seconds}
       />
-      <NumberInput
-        label={t.properties.gain}
-        value={item.data.Gain as number || -1}
-        onChange={(v) => updateData('Gain', v)}
-        min={-1}
-        unit={t.properties.defaultValue}
-      />
-      <NumberInput
-        label={t.properties.offset}
-        value={item.data.Offset as number || -1}
-        onChange={(v) => updateData('Offset', v)}
-        min={-1}
-        unit={t.properties.defaultValue}
-      />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <NumberInput
+          label={t.properties.gain}
+          value={item.data.Gain as number || -1}
+          onChange={(v) => updateData('Gain', v)}
+          min={-1}
+        />
+        <NumberInput
+          label={t.properties.offset}
+          value={item.data.Offset as number || -1}
+          onChange={(v) => updateData('Offset', v)}
+          min={-1}
+        />
+      </div>
       <SelectInput
         label={t.properties.imageType}
         value={item.data.ImageType as string || 'LIGHT'}
         onChange={(v) => updateData('ImageType', v)}
         options={IMAGE_TYPES}
       />
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <NumberInput
           label={t.properties.binningX}
           value={(item.data.Binning as { X: number; Y: number })?.X || 1}
@@ -761,9 +790,9 @@ export function PropertyPanel() {
     const translatedDescription = getTranslatedDescription(selectedItem.type, definition?.description);
     
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {/* Common Properties */}
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <TextInput
             label={t.properties.itemName}
             value={selectedItem.name}
@@ -771,11 +800,11 @@ export function PropertyPanel() {
           />
           
           {translatedDescription && (
-            <p className="text-xs text-zinc-500">{translatedDescription}</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">{translatedDescription}</p>
           )}
         </div>
         
-        <Separator className="bg-zinc-700" />
+        <Separator />
         
         {/* Type-specific Properties */}
         {selectedItem.type.includes('Exposure') && (
@@ -798,23 +827,25 @@ export function PropertyPanel() {
           <DeepSkyObjectProperties item={selectedItem} onUpdate={handleUpdateItem} />
         )}
         
-        <Separator className="bg-zinc-700" />
+        <Separator />
         
         {/* Error Behavior */}
-        <SelectInput
-          label={t.properties.onError}
-          value={selectedItem.data.ErrorBehavior as string || 'ContinueOnError'}
-          onChange={(v) => handleUpdateItem({ data: { ...selectedItem.data, ErrorBehavior: v } })}
-          options={ERROR_BEHAVIORS}
-        />
-        
-        <NumberInput
-          label={t.properties.retryAttempts}
-          value={selectedItem.data.Attempts as number || 1}
-          onChange={(v) => handleUpdateItem({ data: { ...selectedItem.data, Attempts: v } })}
-          min={1}
-          max={10}
-        />
+        <div className="space-y-2.5 sm:space-y-3">
+          <SelectInput
+            label={t.properties.onError}
+            value={selectedItem.data.ErrorBehavior as string || 'ContinueOnError'}
+            onChange={(v) => handleUpdateItem({ data: { ...selectedItem.data, ErrorBehavior: v } })}
+            options={ERROR_BEHAVIORS}
+          />
+          
+          <NumberInput
+            label={t.properties.retryAttempts}
+            value={selectedItem.data.Attempts as number || 1}
+            onChange={(v) => handleUpdateItem({ data: { ...selectedItem.data, Attempts: v } })}
+            min={1}
+            max={10}
+          />
+        </div>
       </div>
     );
   };
@@ -822,12 +853,12 @@ export function PropertyPanel() {
   // No selection
   if (!selectedItem && !findCondition && !findTrigger) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 mx-auto rounded-full bg-zinc-800 flex items-center justify-center">
-            <HelpCircle className="w-6 h-6 text-zinc-500" />
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
+        <div className="text-center space-y-2 sm:space-y-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
+            <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-zinc-500">
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-[200px]">
             {t.properties.selectItem}
           </p>
         </div>
@@ -836,20 +867,20 @@ export function PropertyPanel() {
   }
 
   return (
-    <div className="flex-1 overflow-auto p-3 space-y-3">
+    <div className="flex-1 overflow-auto p-2 sm:p-3 space-y-2 sm:space-y-3 scrollbar-thin">
       {/* Condition Properties */}
       {findCondition && (
-        <Card className="bg-zinc-800/50 border-yellow-500/30">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium text-yellow-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-yellow-400" />
+        <Card className="bg-muted/30 border-yellow-500/30">
+          <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-yellow-400 flex items-center gap-1.5 sm:gap-2">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-yellow-400 shrink-0" />
               {t.properties.condition}
             </CardTitle>
-            <CardDescription className="text-xs">
+            <CardDescription className="text-[11px] sm:text-xs truncate">
               {findCondition.condition.name}
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0">
             <ConditionProperties 
               condition={findCondition.condition} 
               containerId={findCondition.containerId} 
@@ -860,17 +891,17 @@ export function PropertyPanel() {
       
       {/* Trigger Properties */}
       {findTrigger && !findCondition && (
-        <Card className="bg-zinc-800/50 border-purple-500/30">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium text-purple-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-purple-400" />
+        <Card className="bg-muted/30 border-purple-500/30">
+          <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-purple-400 flex items-center gap-1.5 sm:gap-2">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-purple-400 shrink-0" />
               {t.properties.trigger}
             </CardTitle>
-            <CardDescription className="text-xs">
+            <CardDescription className="text-[11px] sm:text-xs truncate">
               {findTrigger.trigger.name}
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0">
             <TriggerProperties 
               trigger={findTrigger.trigger} 
               containerId={findTrigger.containerId} 
@@ -881,17 +912,17 @@ export function PropertyPanel() {
       
       {/* Item Properties */}
       {selectedItem && !findCondition && !findTrigger && (
-        <Card className="bg-zinc-800/50 border-blue-500/30">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium text-blue-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-400" />
-              {getTranslatedCategory(getItemDefinition(selectedItem.type)?.category || '') || t.properties.item}
+        <Card className="bg-muted/30 border-blue-500/30">
+          <CardHeader className="py-2 sm:py-3 px-3 sm:px-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-blue-400 flex items-center gap-1.5 sm:gap-2">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-400 shrink-0" />
+              <span className="truncate">{getTranslatedCategory(getItemDefinition(selectedItem.type)?.category || '') || t.properties.item}</span>
             </CardTitle>
-            <CardDescription className="text-xs">
+            <CardDescription className="text-[11px] sm:text-xs truncate">
               {selectedItem.type.split('.').slice(-1)[0].split(',')[0]}
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0">
             {renderItemProperties()}
           </CardContent>
         </Card>

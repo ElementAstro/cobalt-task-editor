@@ -18,17 +18,17 @@ export function LanguageSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <Globe className="h-4 w-4" />
-          <span className="hidden sm:inline">{currentLocale?.nativeName}</span>
+        <Button variant="ghost" size="sm" className="gap-1.5 sm:gap-2 h-8 w-8 sm:w-auto px-0 sm:px-2">
+          <Globe className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline text-xs">{currentLocale?.nativeName}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="min-w-[140px]">
         {availableLocales.map((loc) => (
           <DropdownMenuItem
             key={loc.code}
             onClick={() => setLocale(loc.code as Locale)}
-            className={locale === loc.code ? 'bg-accent' : ''}
+            className={`${locale === loc.code ? 'bg-accent' : ''} text-sm py-2`}
           >
             <span className="mr-2">{loc.code === 'en' ? '🇺🇸' : '🇨🇳'}</span>
             {loc.nativeName}

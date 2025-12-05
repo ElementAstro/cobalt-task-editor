@@ -46,6 +46,7 @@ export interface Translations {
     days: string;
     degrees: string;
     arcminutes: string;
+    back: string;
   };
 
   // Editor
@@ -75,6 +76,14 @@ export interface Translations {
     copyItem: string;
     pasteItem: string;
     cutItem: string;
+    insertBefore: string;
+    insertAfter: string;
+    insertInside: string;
+    selectParent: string;
+    copyType: string;
+    itemActions: string;
+    addCondition: string;
+    addTrigger: string;
   };
 
   // Toolbox
@@ -93,6 +102,8 @@ export interface Translations {
     conditionAdded: string;
     triggerAdded: string;
     selectContainerFirst: string;
+    addCondition: string;
+    addTrigger: string;
   };
 
   // Properties
@@ -493,6 +504,14 @@ export interface Translations {
     flatCaptureDesc: string;
     darkCapture: string;
     darkCaptureDesc: string;
+    meridianMonitor: string;
+    meridianMonitorDesc: string;
+    autofocusDither: string;
+    autofocusDitherDesc: string;
+    calibrationSuite: string;
+    calibrationSuiteDesc: string;
+    planetarySession: string;
+    planetarySessionDesc: string;
     mosaicSession: string;
     mosaicSessionDesc: string;
     startupRoutine: string;
@@ -608,6 +627,66 @@ export interface Translations {
     autofocusAfterTemperatureChange: string;
     autofocusAfterTime: string;
     centerAfterDrift: string;
+  };
+
+  // Simple Sequence Editor
+  simple: {
+    title: string;
+    targets: string;
+    exposures: string;
+    addTarget: string;
+    addExposure: string;
+    noTargets: string;
+    noExposures: string;
+    selectTarget: string;
+    targetOptions: string;
+    autofocusOptions: string;
+    startOptions: string;
+    endOptions: string;
+    progress: string;
+    dither: string;
+    ditherEvery: string;
+    noFilter: string;
+    reset: string;
+    resetProgress: string;
+    resetAll: string;
+    resetAllProgress: string;
+    // Target options
+    slewToTarget: string;
+    centerTarget: string;
+    rotateTarget: string;
+    startGuiding: string;
+    // Autofocus options
+    autoFocusOnStart: string;
+    autoFocusOnFilterChange: string;
+    autoFocusAfterTime: string;
+    autoFocusAfterExposures: string;
+    autoFocusAfterTempChange: string;
+    autoFocusAfterHFRChange: string;
+    // Start/End options
+    coolCamera: string;
+    warmCamera: string;
+    unparkMount: string;
+    parkMount: string;
+    meridianFlip: string;
+    downloadTime: string;
+    // ETA
+    totalDuration: string;
+    estimatedEnd: string;
+    totalExposures: string;
+    remaining: string;
+    exposureCount: string;
+    // Import/Export
+    importJSON: string;
+    importCSV: string;
+    exportJSON: string;
+    exportCSV: string;
+    exportXML: string;
+    copyExposuresToAll: string;
+    unsaved: string;
+    // Mobile
+    options: string;
+    sequenceOptions: string;
   };
 }
 

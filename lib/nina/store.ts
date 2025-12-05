@@ -37,6 +37,8 @@ interface SequenceEditorState {
   activeArea: 'start' | 'target' | 'end';
   toolboxExpanded: boolean;
   propertyPanelExpanded: boolean;
+  toolboxWidth: number;
+  propertyPanelWidth: number;
   searchQuery: string;
   
   // History for undo/redo
@@ -81,6 +83,8 @@ interface SequenceEditorActions {
   setActiveArea: (area: 'start' | 'target' | 'end') => void;
   setToolboxExpanded: (expanded: boolean) => void;
   setPropertyPanelExpanded: (expanded: boolean) => void;
+  setToolboxWidth: (width: number) => void;
+  setPropertyPanelWidth: (width: number) => void;
   setSearchQuery: (query: string) => void;
   
   // History
@@ -118,6 +122,8 @@ const initialState: SequenceEditorState = {
   activeArea: 'target',
   toolboxExpanded: true,
   propertyPanelExpanded: true,
+  toolboxWidth: 300,
+  propertyPanelWidth: 320,
   searchQuery: '',
   history: [],
   historyIndex: -1,
@@ -228,6 +234,23 @@ export const useSequenceEditorStore = create<SequenceEditorStore>()(
     },
     
     deleteItem: (itemId) => {
+      const itemToDelete = get().getItemById(itemId);
+      const affectedIds = {
+        items: new Set<string>(),
+        conditions: new Set<string>(),
+        triggers: new Set<string>(),
+      };
+
+      const collectIds = (item: EditorSequenceItem | null) => {
+        if (!item) return;
+        affectedIds.items.add(item.id);
+        item.conditions?.forEach((c) => affectedIds.conditions.add(c.id));
+        item.triggers?.forEach((t) => affectedIds.triggers.add(t.id));
+        item.items?.forEach(collectIds);
+      };
+
+      collectIds(itemToDelete || null);
+
       get().saveToHistory();
       
       set(state => {
@@ -245,8 +268,14 @@ export const useSequenceEditorStore = create<SequenceEditorStore>()(
         state.sequence.targetItems = deleteFromItems(state.sequence.targetItems);
         state.sequence.endItems = deleteFromItems(state.sequence.endItems);
         
-        if (state.selectedItemId === itemId) {
+        if (state.selectedItemId && affectedIds.items.has(state.selectedItemId)) {
           state.selectedItemId = null;
+        }
+        if (state.selectedConditionId && affectedIds.conditions.has(state.selectedConditionId)) {
+          state.selectedConditionId = null;
+        }
+        if (state.selectedTriggerId && affectedIds.triggers.has(state.selectedTriggerId)) {
+          state.selectedTriggerId = null;
         }
         
         state.isDirty = true;
@@ -555,6 +584,18 @@ export const useSequenceEditorStore = create<SequenceEditorStore>()(
     setPropertyPanelExpanded: (expanded) => {
       set(state => {
         state.propertyPanelExpanded = expanded;
+      });
+    },
+
+    setToolboxWidth: (width) => {
+      set(state => {
+        state.toolboxWidth = width;
+      });
+    },
+
+    setPropertyPanelWidth: (width) => {
+      set(state => {
+        state.propertyPanelWidth = width;
       });
     },
     

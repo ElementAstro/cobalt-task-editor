@@ -14,7 +14,9 @@ import {
   Package,
   Settings2,
   Sparkles,
+  Target,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -59,6 +61,7 @@ import { Input } from '@/components/ui/input';
 import { Kbd } from '@/components/ui/kbd';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { SequenceTabs } from './SequenceTabs';
 import { TemplateSelector } from './TemplateSelector';
 import { useMultiSequenceStore } from '@/lib/nina/multi-sequence-store';
@@ -71,6 +74,8 @@ export function SequenceEditor() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [confirmNewOpen, setConfirmNewOpen] = useState(false);
   const prevSelectedItemId = useRef<string | null>(null);
+  const [isResizingLeft, setIsResizingLeft] = useState(false);
+  const [isResizingRight, setIsResizingRight] = useState(false);
   
   // Multi-sequence store
   const { tabs, activeTabId, addTab, updateTabSequence, setTabDirty, getTabById } = useMultiSequenceStore(useShallow(state => ({
@@ -84,24 +89,76 @@ export function SequenceEditor() {
   
   const {
     sequence,
-    selectedItemId,
     activeArea,
     toolboxExpanded,
     propertyPanelExpanded,
+    toolboxWidth,
+    propertyPanelWidth,
     setActiveArea,
     setToolboxExpanded,
     setPropertyPanelExpanded,
-    newSequence,
+    setToolboxWidth,
+    setPropertyPanelWidth,
     loadSequence,
+    selectedItemId,
+    newSequence,
+    clearDirty,
     setSequenceTitle,
     undo,
     redo,
-    clearDirty,
-  } = useSequenceEditorStore();
+  } = useSequenceEditorStore(useShallow(state => ({
+    sequence: state.sequence,
+    activeArea: state.activeArea,
+    toolboxExpanded: state.toolboxExpanded,
+    propertyPanelExpanded: state.propertyPanelExpanded,
+    toolboxWidth: state.toolboxWidth,
+    propertyPanelWidth: state.propertyPanelWidth,
+    setActiveArea: state.setActiveArea,
+    setToolboxExpanded: state.setToolboxExpanded,
+    setPropertyPanelExpanded: state.setPropertyPanelExpanded,
+    setToolboxWidth: state.setToolboxWidth,
+    setPropertyPanelWidth: state.setPropertyPanelWidth,
+    loadSequence: state.loadSequence,
+    selectedItemId: state.selectedItemId,
+    newSequence: state.newSequence,
+    clearDirty: state.clearDirty,
+    setSequenceTitle: state.setSequenceTitle,
+    undo: state.undo,
+    redo: state.redo,
+  })));
   
   const canUndo = useSequenceEditorStore(selectCanUndo);
   const canRedo = useSequenceEditorStore(selectCanRedo);
   const isDirty = useSequenceEditorStore(selectIsDirty);
+  
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (isResizingLeft) {
+        const newWidth = Math.min(420, Math.max(200, event.clientX));
+        setToolboxWidth(newWidth);
+      }
+      if (isResizingRight) {
+        const viewportWidth = window.innerWidth;
+        const newWidth = Math.min(520, Math.max(240, viewportWidth - event.clientX));
+        setPropertyPanelWidth(newWidth);
+      }
+    };
+
+    const stopResizing = () => {
+      setIsResizingLeft(false);
+      setIsResizingRight(false);
+    };
+
+    if (isResizingLeft || isResizingRight) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', stopResizing);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizingLeft, isResizingRight, setToolboxWidth, setPropertyPanelWidth]);
   
   // Create initial tab if none exists (only once on mount)
   const hasInitialized = useRef(false);
@@ -256,33 +313,35 @@ export function SequenceEditor() {
         </div>
         
         {/* Header Toolbar - Responsive */}
-        <header className="flex items-center justify-between px-2 sm:px-4 py-2 bg-card border-b border-border gap-2">
+        <header className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-2.5 bg-card border-b border-border">
           {/* Left: Logo and Title */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 sm:flex-initial">
             <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400 shrink-0" />
             <Input
               type="text"
               value={sequence.title}
               onChange={handleTitleChange}
-              className="bg-transparent border-none shadow-none text-sm sm:text-lg font-semibold focus-visible:ring-1 focus-visible:ring-blue-500 rounded px-1 sm:px-2 py-1 min-w-0 w-full sm:w-auto max-w-[120px] sm:max-w-none h-auto"
+              className="bg-transparent border-none shadow-none text-sm sm:text-base lg:text-lg font-semibold focus-visible:ring-1 focus-visible:ring-blue-500 rounded px-1 sm:px-2 py-0.5 sm:py-1 min-w-0 w-full sm:w-auto max-w-[100px] xs:max-w-[140px] sm:max-w-[200px] lg:max-w-none h-auto"
               placeholder={t.editor.sequenceTitle}
             />
             {isDirty && (
-              <Badge variant="outline" className="text-yellow-400 border-yellow-500/50 shrink-0">
+              <Badge variant="outline" className="text-yellow-400 border-yellow-500/50 shrink-0 text-[10px] sm:text-xs px-1.5 py-0">
                 *
               </Badge>
             )}
           </div>
           
           {/* Center: Desktop Actions */}
-          <div className="hidden md:flex items-center gap-1 lg:gap-2">
+          <div className="hidden md:flex items-center gap-0.5 lg:gap-1">
             <TemplateSelector activeTabId={activeTabId} />
+            
+            <Separator orientation="vertical" className="h-6 mx-1" />
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={handleNew} className="px-2 lg:px-3">
-                  <Plus className="w-4 h-4 lg:mr-1" />
-                  <span className="hidden lg:inline">{t.editor.newSequence}</span>
+                <Button variant="ghost" size="sm" onClick={handleNew} className="h-8 px-2 lg:px-2.5">
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden xl:inline ml-1.5 text-xs">{t.editor.newSequence}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t.editor.newSequence}</TooltipContent>
@@ -290,9 +349,9 @@ export function SequenceEditor() {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={handleImport} className="px-2 lg:px-3">
-                  <Upload className="w-4 h-4 lg:mr-1" />
-                  <span className="hidden lg:inline">{t.editor.import}</span>
+                <Button variant="ghost" size="sm" onClick={handleImport} className="h-8 px-2 lg:px-2.5">
+                  <Upload className="w-4 h-4" />
+                  <span className="hidden xl:inline ml-1.5 text-xs">{t.editor.import}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t.editor.import} (Ctrl+O)</TooltipContent>
@@ -300,19 +359,19 @@ export function SequenceEditor() {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={handleExport} className="px-2 lg:px-3">
-                  <Download className="w-4 h-4 lg:mr-1" />
-                  <span className="hidden lg:inline">{t.editor.export}</span>
+                <Button variant="ghost" size="sm" onClick={handleExport} className="h-8 px-2 lg:px-2.5">
+                  <Download className="w-4 h-4" />
+                  <span className="hidden xl:inline ml-1.5 text-xs">{t.editor.export}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t.editor.export} (Ctrl+S)</TooltipContent>
             </Tooltip>
             
-            <div className="w-px h-6 bg-border mx-1" />
+            <Separator orientation="vertical" className="h-6 mx-1" />
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={undo} disabled={!canUndo}>
+                <Button variant="ghost" size="sm" onClick={undo} disabled={!canUndo} className="h-8 w-8 p-0">
                   <Undo2 className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
@@ -321,7 +380,7 @@ export function SequenceEditor() {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={redo} disabled={!canRedo}>
+                <Button variant="ghost" size="sm" onClick={redo} disabled={!canRedo} className="h-8 w-8 p-0">
                   <Redo2 className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
@@ -330,39 +389,58 @@ export function SequenceEditor() {
           </div>
 
           {/* Right: Settings and Language */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            {/* Link to Simple Editor */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/simple">
+                  <Button variant="ghost" size="sm" className="h-8 px-2">
+                    <Target className="w-4 h-4" />
+                    <span className="hidden lg:inline ml-1.5 text-xs">{t.simple?.title || 'Simple'}</span>
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>{t.simple?.title || 'Simple Sequence Editor'}</TooltipContent>
+            </Tooltip>
+            
+            <Separator orientation="vertical" className="h-6 mx-0.5 hidden sm:block" />
+            
             {/* Mobile Menu */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="md:hidden">
+                <Button variant="ghost" size="sm" className="md:hidden h-8 w-8 p-0">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="top" className="bg-zinc-800 border-zinc-700">
-                <SheetHeader>
-                  <SheetTitle className="text-zinc-100">{t.common.actions}</SheetTitle>
+              <SheetContent side="top" className="bg-card border-border">
+                <SheetHeader className="pb-2">
+                  <SheetTitle>{t.common.actions}</SheetTitle>
                 </SheetHeader>
-                <div className="grid grid-cols-2 gap-2 py-4">
-                  <Button variant="outline" onClick={() => { handleNew(); setMobileMenuOpen(false); }} className="justify-start">
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t.editor.newSequence}
+                <div className="grid grid-cols-2 gap-2 py-3">
+                  <Button variant="outline" onClick={() => { handleNew(); setMobileMenuOpen(false); }} className="justify-start h-11 text-sm">
+                    <Plus className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">{t.editor.newSequence}</span>
                   </Button>
-                  <Button variant="outline" onClick={() => { handleImport(); setMobileMenuOpen(false); }} className="justify-start">
-                    <Upload className="w-4 h-4 mr-2" />
-                    {t.editor.import}
+                  <Button variant="outline" onClick={() => { handleImport(); setMobileMenuOpen(false); }} className="justify-start h-11 text-sm">
+                    <Upload className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">{t.editor.import}</span>
                   </Button>
-                  <Button variant="outline" onClick={() => { handleExport(); setMobileMenuOpen(false); }} className="justify-start">
-                    <Download className="w-4 h-4 mr-2" />
-                    {t.editor.export}
+                  <Button variant="outline" onClick={() => { handleExport(); setMobileMenuOpen(false); }} className="justify-start h-11 text-sm">
+                    <Download className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">{t.editor.export}</span>
                   </Button>
-                  <Button variant="outline" onClick={() => { undo(); setMobileMenuOpen(false); }} disabled={!canUndo} className="justify-start">
-                    <Undo2 className="w-4 h-4 mr-2" />
-                    {t.editor.undo}
+                  <Button variant="outline" onClick={() => { undo(); setMobileMenuOpen(false); }} disabled={!canUndo} className="justify-start h-11 text-sm">
+                    <Undo2 className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">{t.editor.undo}</span>
                   </Button>
-                  <Button variant="outline" onClick={() => { redo(); setMobileMenuOpen(false); }} disabled={!canRedo} className="justify-start">
-                    <Redo2 className="w-4 h-4 mr-2" />
-                    {t.editor.redo}
+                  <Button variant="outline" onClick={() => { redo(); setMobileMenuOpen(false); }} disabled={!canRedo} className="justify-start h-11 text-sm col-span-2 sm:col-span-1">
+                    <Redo2 className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">{t.editor.redo}</span>
                   </Button>
+                </div>
+                {/* Mobile Template Selector */}
+                <div className="pt-2 border-t border-border">
+                  <TemplateSelector activeTabId={activeTabId} />
                 </div>
               </SheetContent>
             </Sheet>
@@ -370,11 +448,11 @@ export function SequenceEditor() {
             {/* Desktop: Keyboard Shortcuts */}
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="hidden sm:flex">
+                <Button variant="ghost" size="sm" className="hidden sm:flex h-8 w-8 p-0">
                   <Keyboard className="w-4 h-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{t.shortcuts.title}</DialogTitle>
                 </DialogHeader>
@@ -461,29 +539,44 @@ export function SequenceEditor() {
           {/* Left Sidebar - Toolbox (Desktop) */}
           <aside 
             data-tour="toolbox"
-            className={`hidden sm:flex flex-col bg-card border-r border-border transition-all duration-300 ${
-              toolboxExpanded ? 'w-56 lg:w-64' : 'w-10 lg:w-12'
+            style={{ width: toolboxExpanded ? `${toolboxWidth}px` : '40px' }}
+            className={`hidden sm:flex flex-col bg-card border-r border-border transition-all duration-300 ease-out ${
+              toolboxExpanded ? '' : 'w-10'
             }`}
           >
-            <div className="flex items-center justify-between p-1.5 lg:p-2 border-b border-border">
-              {toolboxExpanded && <span className="text-xs lg:text-sm font-medium truncate">{t.toolbox.title}</span>}
+            <div className="flex items-center justify-between px-2 py-1.5 border-b border-border shrink-0 min-h-[40px]">
+              <span className={`text-sm font-medium truncate pl-1 transition-all duration-200 ${toolboxExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 absolute'}`}>
+                {t.toolbox.title}
+              </span>
               <Button 
                 variant="ghost" 
-                size="sm" 
+                size="icon" 
                 onClick={() => setToolboxExpanded(!toolboxExpanded)}
-                className="ml-auto p-1 lg:p-2"
+                className="ml-auto h-7 w-7 shrink-0 transition-transform duration-200 hover:scale-105"
+                aria-label={toolboxExpanded ? 'Collapse toolbox' : 'Expand toolbox'}
               >
-                {toolboxExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                <ChevronLeft className={`w-4 h-4 transition-transform duration-200 ${toolboxExpanded ? '' : 'rotate-180'}`} />
               </Button>
             </div>
-            {toolboxExpanded && <SequenceToolbox />}
+            <div className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin transition-opacity duration-200 ${toolboxExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              <SequenceToolbox />
+            </div>
           </aside>
+
+          {toolboxExpanded && (
+            <div
+              onMouseDown={() => setIsResizingLeft(true)}
+              className="hidden sm:block w-1.5 cursor-col-resize bg-border/20 hover:bg-border transition-colors"
+              role="separator"
+              aria-orientation="vertical"
+            />
+          )}
 
           {/* Mobile Toolbox Sheet */}
           <Sheet open={mobileToolboxOpen} onOpenChange={setMobileToolboxOpen}>
-            <SheetContent side="left" className="w-[85vw] max-w-sm sm:hidden bg-card border-border p-0 flex flex-col">
-              <SheetHeader className="p-4 border-b border-border shrink-0">
-                <SheetTitle>{t.toolbox.title}</SheetTitle>
+            <SheetContent side="left" className="w-[88vw] max-w-[340px] sm:hidden bg-card border-border p-0 flex flex-col">
+              <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
+                <SheetTitle className="text-base">{t.toolbox.title}</SheetTitle>
               </SheetHeader>
               <div className="flex-1 overflow-hidden relative">
                 <SequenceToolbox onClose={handleCloseMobileToolbox} isMobile={true} />
@@ -493,86 +586,99 @@ export function SequenceEditor() {
 
           {/* Center - Sequence Tree */}
           <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-            {/* Area Tabs - Responsive */}
-            <div data-tour="tabs" className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-4 py-1.5 sm:py-2 bg-muted/50 border-b border-border overflow-x-auto scrollbar-hide">
-              <button
-                onClick={() => setActiveArea('start')}
-                className={`shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 rounded-t text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeArea === 'start' 
-                    ? 'bg-accent text-accent-foreground' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                }`}
-              >
-                <span className="hidden sm:inline">{t.editor.startInstructions}</span>
-                <span className="sm:hidden">Start</span>
-                <span className="ml-1 sm:ml-2 text-xs text-muted-foreground">
-                  ({sequence.startItems.length})
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveArea('target')}
-                className={`shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 rounded-t text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeArea === 'target' 
-                    ? 'bg-accent text-accent-foreground' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                }`}
-              >
-                <span className="hidden sm:inline">{t.editor.targetInstructions}</span>
-                <span className="sm:hidden">Target</span>
-                <span className="ml-1 sm:ml-2 text-xs text-muted-foreground">
-                  ({sequence.targetItems.length})
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveArea('end')}
-                className={`shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 rounded-t text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeArea === 'end' 
-                    ? 'bg-accent text-accent-foreground' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                }`}
-              >
-                <span className="hidden sm:inline">{t.editor.endInstructions}</span>
-                <span className="sm:hidden">End</span>
-                <span className="ml-1 sm:ml-2 text-xs text-muted-foreground">
-                  ({sequence.endItems.length})
-                </span>
-              </button>
-            </div>
+            {/* Area Tabs - Using shadcn Tabs */}
+            <Tabs 
+              value={activeArea} 
+              onValueChange={(v) => setActiveArea(v as 'start' | 'target' | 'end')}
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              <div data-tour="tabs" className="px-2 sm:px-4 py-1.5 sm:py-2 bg-muted/30 border-b border-border">
+                <TabsList className="h-auto p-0.5 sm:p-1 bg-muted/50 w-full sm:w-auto grid grid-cols-3 sm:inline-flex gap-0.5 sm:gap-1">
+                  <TabsTrigger 
+                    value="start" 
+                    className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm gap-1 sm:gap-1.5 transition-all duration-200"
+                  >
+                    <span className="hidden sm:inline">{t.editor.startInstructions}</span>
+                    <span className="sm:hidden">Start</span>
+                    <Badge variant="secondary" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[9px] sm:text-[10px]">
+                      {sequence.startItems.length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="target" 
+                    className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm gap-1 sm:gap-1.5 transition-all duration-200"
+                  >
+                    <span className="hidden sm:inline">{t.editor.targetInstructions}</span>
+                    <span className="sm:hidden">Target</span>
+                    <Badge variant="secondary" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[9px] sm:text-[10px]">
+                      {sequence.targetItems.length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="end" 
+                    className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm gap-1 sm:gap-1.5 transition-all duration-200"
+                  >
+                    <span className="hidden sm:inline">{t.editor.endInstructions}</span>
+                    <span className="sm:hidden">End</span>
+                    <Badge variant="secondary" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[9px] sm:text-[10px]">
+                      {sequence.endItems.length}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-            {/* Sequence Tree */}
-            <div data-tour="sequence" className="flex-1 overflow-auto p-2 sm:p-4">
-              <SequenceTree />
-            </div>
+              {/* Sequence Tree - All tabs share the same content since SequenceTree reads activeArea from store */}
+              <TabsContent value={activeArea} className="flex-1 overflow-hidden m-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-bottom-1 duration-200">
+                <div data-tour="sequence" className="h-full overflow-auto p-2 sm:p-4 lg:p-6 scrollbar-thin">
+                  <SequenceTree />
+                </div>
+              </TabsContent>
+            </Tabs>
           </main>
 
           {/* Right Sidebar - Property Panel (Desktop) */}
           <aside 
             data-tour="properties"
-            className={`hidden sm:flex flex-col bg-card border-l border-border transition-all duration-300 ${
-              propertyPanelExpanded ? 'w-72 lg:w-80 xl:w-96' : 'w-10 lg:w-12'
+            style={{ width: propertyPanelExpanded ? `${propertyPanelWidth}px` : '40px' }}
+            className={`hidden sm:flex flex-col bg-card border-l border-border transition-all duration-300 ease-out ${
+              propertyPanelExpanded ? '' : 'w-10'
             }`}
           >
-            <div className="flex items-center justify-between p-1.5 lg:p-2 border-b border-border">
+            <div className="flex items-center justify-between px-2 py-1.5 border-b border-border shrink-0 min-h-[40px]">
               <Button 
                 variant="ghost" 
-                size="sm" 
+                size="icon" 
                 onClick={() => setPropertyPanelExpanded(!propertyPanelExpanded)}
-                className="p-1 lg:p-2"
+                className="h-7 w-7 shrink-0 transition-transform duration-200 hover:scale-105"
+                aria-label={propertyPanelExpanded ? 'Collapse properties' : 'Expand properties'}
               >
-                {propertyPanelExpanded ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${propertyPanelExpanded ? '' : 'rotate-180'}`} />
               </Button>
-              {propertyPanelExpanded && <span className="text-xs lg:text-sm font-medium truncate">{t.properties.title}</span>}
+              <span className={`text-sm font-medium truncate pr-1 transition-all duration-200 ${propertyPanelExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 absolute right-0'}`}>
+                {t.properties.title}
+              </span>
             </div>
-            {propertyPanelExpanded && <PropertyPanel />}
+            <div className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin transition-opacity duration-200 ${propertyPanelExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              <PropertyPanel />
+            </div>
           </aside>
+
+          {propertyPanelExpanded && (
+            <div
+              onMouseDown={() => setIsResizingRight(true)}
+              className="hidden sm:block w-1.5 cursor-col-resize bg-border/20 hover:bg-border transition-colors"
+              role="separator"
+              aria-orientation="vertical"
+            />
+          )}
 
           {/* Mobile Properties Sheet */}
           <Sheet open={mobilePropertiesOpen} onOpenChange={setMobilePropertiesOpen}>
-            <SheetContent side="right" className="w-[85vw] max-w-sm sm:hidden bg-card border-border p-0 flex flex-col">
-              <SheetHeader className="p-4 border-b border-border shrink-0">
-                <SheetTitle>{t.properties.title}</SheetTitle>
+            <SheetContent side="right" className="w-[88vw] max-w-[340px] sm:hidden bg-card border-border p-0 flex flex-col">
+              <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
+                <SheetTitle className="text-base">{t.properties.title}</SheetTitle>
               </SheetHeader>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto scrollbar-thin">
                 <PropertyPanel />
               </div>
             </SheetContent>
@@ -580,57 +686,72 @@ export function SequenceEditor() {
         </div>
 
         {/* Mobile Bottom Navigation - Enhanced */}
-        <div className="sm:hidden flex items-center bg-card border-t border-border py-1.5 px-2 safe-area-inset-bottom">
+        <nav className="sm:hidden flex items-center bg-card border-t border-border py-1 px-1 safe-area-inset-bottom" aria-label="Mobile navigation">
           {/* Toolbox Button */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setMobileToolboxOpen(true)}
-            className="flex-1 flex-col h-auto py-1.5 gap-0.5 min-w-0"
+            className="flex-1 flex-col h-auto py-2 gap-0.5 min-w-0 rounded-lg active:bg-accent/70 touch-manipulation"
+            aria-label={t.toolbox.title}
           >
             <Package className="w-5 h-5" />
-            <span className="text-[10px] truncate">{t.toolbox.title}</span>
+            <span className="text-[10px] font-medium truncate">{t.toolbox.title}</span>
           </Button>
           
-          <div className="w-px h-10 bg-border" />
+          <Separator orientation="vertical" className="h-10 mx-0.5" />
           
           {/* Quick Info - Item Count */}
-          <div className="flex-1 flex flex-col items-center justify-center py-1.5 min-w-0">
-            <span className="text-xs font-medium">
+          <div className="flex-1 flex flex-col items-center justify-center py-2 min-w-0">
+            <span className="text-sm font-semibold tabular-nums">
               {sequence.startItems.length + sequence.targetItems.length + sequence.endItems.length}
             </span>
             <span className="text-[10px] text-muted-foreground truncate">{t.toolbox.items}</span>
           </div>
           
-          <div className="w-px h-10 bg-border" />
+          <Separator orientation="vertical" className="h-10 mx-0.5" />
           
           {/* Properties Button - with selection indicator */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setMobilePropertiesOpen(true)}
-            className={`flex-1 flex-col h-auto py-1.5 gap-0.5 min-w-0 relative ${selectedItemId ? 'text-blue-400' : ''}`}
+            className={`flex-1 flex-col h-auto py-2 gap-0.5 min-w-0 relative rounded-lg active:bg-accent/70 touch-manipulation ${selectedItemId ? 'text-primary' : ''}`}
+            aria-label={t.properties.title}
           >
             <Settings2 className="w-5 h-5" />
-            <span className="text-[10px] truncate">{t.properties.title}</span>
+            <span className="text-[10px] font-medium truncate">{t.properties.title}</span>
             {selectedItemId && (
-              <span className="absolute top-1 right-1/4 w-2 h-2 bg-blue-500 rounded-full" />
+              <span className="absolute top-1.5 right-1/4 w-2 h-2 bg-primary rounded-full animate-pulse" />
             )}
           </Button>
-        </div>
+        </nav>
 
         {/* Status Bar - Responsive */}
-        <footer className="hidden sm:flex items-center justify-between px-4 py-1 bg-card border-t border-border text-xs text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <span>
-              {t.toolbox.items}: {sequence.startItems.length + sequence.targetItems.length + sequence.endItems.length}
+        <footer className="hidden sm:flex items-center justify-between px-3 lg:px-4 py-1 lg:py-1.5 bg-card border-t border-border text-[11px] lg:text-xs text-muted-foreground">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <span className="flex items-center gap-1">
+              <span className="hidden md:inline">{t.toolbox.items}:</span>
+              <span className="font-medium tabular-nums">
+                {sequence.startItems.length + sequence.targetItems.length + sequence.endItems.length}
+              </span>
             </span>
-            <span>
-              {t.toolbox.triggers}: {sequence.globalTriggers.length}
+            <Separator orientation="vertical" className="h-3" />
+            <span className="flex items-center gap-1">
+              <span className="hidden md:inline">{t.toolbox.triggers}:</span>
+              <span className="font-medium tabular-nums">{sequence.globalTriggers.length}</span>
             </span>
           </div>
-          <div className="truncate">
-            {selectedItemId ? `Selected: ${selectedItemId.substring(0, 8)}...` : t.properties.noSelection}
+          <div className="truncate max-w-[200px] lg:max-w-none">
+            {selectedItemId ? (
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span className="hidden lg:inline">Selected:</span>
+                <code className="text-[10px] lg:text-xs">{selectedItemId.substring(0, 8)}...</code>
+              </span>
+            ) : (
+              <span className="opacity-60">{t.properties.noSelection}</span>
+            )}
           </div>
         </footer>
         

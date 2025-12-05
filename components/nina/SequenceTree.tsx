@@ -2,7 +2,6 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { 
-  ChevronDown, 
   ChevronRight, 
   MoreVertical,
   Trash2,
@@ -47,6 +46,7 @@ import {
   ContextMenuSeparator,
   ContextMenuShortcut,
   ContextMenuTrigger,
+  ContextMenuLabel,
 } from '@/components/ui/context-menu';
 import {
   DropdownMenu,
@@ -81,6 +81,20 @@ import type { EditorSequenceItem, EditorCondition, EditorTrigger, SequenceEntity
 
 // Drop position type
 type DropPosition = 'before' | 'after' | 'inside' | null;
+
+type TranslationParams = Record<string, string | number>;
+
+function resolveTranslation(
+  translations: Record<string, any>,
+  path?: string,
+  params?: TranslationParams
+): string | undefined {
+  if (!path) return undefined;
+  const value = path.split('.').reduce((obj, segment) => obj?.[segment], translations);
+  if (typeof value !== 'string') return undefined;
+  if (!params) return value;
+  return value.replace(/\{(\w+)\}/g, (_, token) => String(params[token] ?? ''));
+}
 
 // Status icon component
 function StatusIcon({ status }: { status: SequenceEntityStatus }) {
@@ -131,9 +145,9 @@ function getItemIcon(type: string) {
 function DropIndicator({ depth }: { depth: number }) {
   return (
     <div 
-      className="h-0.5 bg-blue-500 rounded-full transition-all duration-150"
+      className="h-0.5 sm:h-1 bg-primary rounded-full transition-all duration-150 animate-pulse"
       style={{ 
-        marginLeft: `${depth * 16 + 8}px`,
+        marginLeft: `${Math.max(depth * 12, 8)}px`,
         marginRight: '8px',
         opacity: 1,
       }}
@@ -223,6 +237,34 @@ function SequenceItemNode({
     updateItem(item.id, { status: newStatus as SequenceEntityStatus });
   }, [item.id, item.status, updateItem]);
   
+  const handleInsertBefore = useCallback(() => {
+    const newItem = createSequenceItem(item.type);
+    addItem(area, newItem, parentId, index);
+  }, [item.type, addItem, area, parentId, index]);
+
+  const handleInsertAfter = useCallback(() => {
+    const newItem = createSequenceItem(item.type);
+    addItem(area, newItem, parentId, index + 1);
+  }, [item.type, addItem, area, parentId, index]);
+
+  const handleInsertChild = useCallback(() => {
+    if (!isContainer) return;
+    const newItem = createSequenceItem(item.type);
+    addItem(area, newItem, item.id, item.items?.length ?? 0);
+  }, [isContainer, item.type, item.id, item.items, addItem, area]);
+
+  const handleAddCondition = useCallback(() => {
+    if (!isContainer) return;
+    const newCondition = createCondition('NINA.Sequencer.SequenceCondition.Condition, NINA.Sequencer');
+    addCondition(item.id, newCondition);
+  }, [isContainer, item.id, addCondition]);
+
+  const handleAddTrigger = useCallback(() => {
+    if (!isContainer) return;
+    const newTrigger = createTrigger('NINA.Sequencer.SequenceTrigger.Trigger, NINA.Sequencer');
+    addTrigger(item.id, newTrigger);
+  }, [isContainer, item.id, addTrigger]);
+
   const handleMoveUp = useCallback(() => {
     if (index > 0) {
       moveItem(item.id, area, parentId, index - 1);
@@ -234,6 +276,19 @@ function SequenceItemNode({
     moveItem(item.id, area, parentId, index + 2);
   }, [item.id, index, area, parentId, moveItem]);
   
+  const handleSelectParent = useCallback(() => {
+    if (!parentId) return;
+    selectItem(parentId);
+  }, [parentId, selectItem]);
+
+  const handleCopyType = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(item.type);
+    } catch (error) {
+      console.error('Clipboard copy failed', error);
+    }
+  }, [item.type]);
+
   const handleExpandAll = useCallback(() => {
     const expandRecursively = (items: EditorSequenceItem[]) => {
       items.forEach(i => {
@@ -401,32 +456,30 @@ function SequenceItemNode({
             onDrop={handleDrop}
             onClick={handleClick}
             className={`
-              flex items-center gap-1 sm:gap-1 px-2 sm:px-2 py-2 sm:py-1.5 rounded cursor-pointer group relative
-              ${isSelected ? 'bg-primary/20 ring-1 ring-primary' : 'hover:bg-accent/50 active:bg-accent/70'}
-              ${dropPosition === 'inside' && isContainer ? 'bg-blue-500/20 ring-1 ring-blue-400' : ''}
+              flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-2 sm:py-1.5 rounded-lg border border-border/40 bg-card/10 cursor-pointer group relative
+              ${isSelected ? 'border-primary/60 bg-primary/10 shadow-sm' : 'hover:border-border/70 hover:bg-card/20 active:bg-card/30'}
+              ${dropPosition === 'inside' && isContainer ? 'border-primary/40 bg-primary/5' : ''}
               ${item.status === 'DISABLED' ? 'opacity-50' : ''}
-              ${isDragging ? 'opacity-40' : ''}
-              transition-all duration-150 touch-manipulation tap-highlight-none
+              ${isDragging ? 'opacity-40 scale-[0.98]' : ''}
+              transition-all duration-150 touch-manipulation select-none
             `}
-            style={{ paddingLeft: `${Math.max(depth * 12, depth * 16) + 4}px` }}
+            style={{ paddingLeft: `${Math.max(depth * 10, 4) + 4}px` }}
           >
         {/* Drag Handle - Hidden on mobile, shown on desktop hover */}
-        <GripVertical className="w-3 h-3 text-muted-foreground/50 hidden sm:block opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing" />
+        <GripVertical className="w-3 h-3 text-muted-foreground/50 hidden sm:block opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0" aria-hidden />
         
         {/* Expand/Collapse - Larger tap target on mobile */}
         {isContainer ? (
           <button 
             onClick={handleToggleExpand} 
-            className="p-1.5 sm:p-0.5 hover:bg-accent active:bg-accent/80 rounded touch-manipulation -ml-1 sm:ml-0"
+            className="p-1 sm:p-0.5 hover:bg-accent active:bg-accent/80 rounded-md touch-manipulation -ml-0.5 sm:ml-0 shrink-0 transition-colors"
+            aria-expanded={item.isExpanded}
+            aria-label={item.isExpanded ? 'Collapse' : 'Expand'}
           >
-            {item.isExpanded ? (
-              <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="w-5 h-5 sm:w-4 sm:h-4 text-muted-foreground" />
-            )}
+            <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${item.isExpanded ? 'rotate-90' : ''}`} />
           </button>
         ) : (
-          <span className="w-5 sm:w-5" />
+          <span className="w-4 sm:w-5 shrink-0" />
         )}
         
         {/* Status */}
@@ -436,14 +489,14 @@ function SequenceItemNode({
         {getItemIcon(item.type)}
         
         {/* Name */}
-        <span className={`flex-1 text-sm truncate ${item.status === 'DISABLED' ? 'line-through' : ''}`}>
+        <span className={`flex-1 text-xs sm:text-sm truncate ${item.status === 'DISABLED' ? 'line-through text-muted-foreground' : ''}`}>
           {getTranslatedName()}
         </span>
         
         {/* Item counts for containers */}
         {isContainer && item.items && (
-          <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-            {item.items.length} {t.toolbox.items}
+          <Badge variant="secondary" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[9px] sm:text-[10px] shrink-0 hidden xs:flex">
+            {item.items.length}
           </Badge>
         )}
         
@@ -451,12 +504,12 @@ function SequenceItemNode({
         {item.conditions && item.conditions.length > 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-yellow-500/50 text-yellow-400 gap-0.5">
-                <Repeat className="w-3 h-3" />
-                {item.conditions.length}
+              <Badge variant="outline" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[9px] sm:text-[10px] border-yellow-500/50 text-yellow-400 gap-0.5 shrink-0">
+                <Repeat className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                <span className="hidden xs:inline">{item.conditions.length}</span>
               </Badge>
             </TooltipTrigger>
-            <TooltipContent side="top">
+            <TooltipContent side="top" className="hidden sm:block">
               <p className="text-xs">{item.conditions.length} {t.toolbox.conditions}</p>
             </TooltipContent>
           </Tooltip>
@@ -466,12 +519,12 @@ function SequenceItemNode({
         {item.triggers && item.triggers.length > 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-purple-500/50 text-purple-400 gap-0.5">
-                <Zap className="w-3 h-3" />
-                {item.triggers.length}
+              <Badge variant="outline" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[9px] sm:text-[10px] border-purple-500/50 text-purple-400 gap-0.5 shrink-0">
+                <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                <span className="hidden xs:inline">{item.triggers.length}</span>
               </Badge>
             </TooltipTrigger>
-            <TooltipContent side="top">
+            <TooltipContent side="top" className="hidden sm:block">
               <p className="text-xs">{item.triggers.length} {t.toolbox.triggers}</p>
             </TooltipContent>
           </Tooltip>
@@ -484,13 +537,13 @@ function SequenceItemNode({
               variant="ghost"
               size="sm"
               onClick={(e) => e.stopPropagation()}
-              className="h-7 w-7 p-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+              className="h-6 w-6 sm:h-7 sm:w-7 p-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
               aria-label={t.a11y.openMenu}
             >
-              <MoreVertical className="w-4 h-4 text-zinc-400" />
+              <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="min-w-[160px]">
+          <DropdownMenuContent className="min-w-[160px] max-w-[90vw]">
             <DropdownMenuItem onClick={handleDuplicate}>
               <Copy className="w-4 h-4 mr-2" />
               {t.common.duplicate}
@@ -512,6 +565,33 @@ function SequenceItemNode({
             </DropdownMenuItem>
             
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleInsertBefore}>
+              <ArrowUp className="w-4 h-4 mr-2" />
+              {t.editor.insertBefore}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleInsertAfter}>
+              <ArrowDown className="w-4 h-4 mr-2" />
+              {t.editor.insertAfter}
+            </DropdownMenuItem>
+            {isContainer && (
+              <DropdownMenuItem onClick={handleInsertChild}>
+                <ChevronRight className="w-4 h-4 mr-2" />
+                {t.editor.insertInside}
+              </DropdownMenuItem>
+            )}
+            {isContainer && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleAddCondition}>
+                  <Repeat className="w-4 h-4 mr-2" />
+                  {t.toolbox.addCondition}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleAddTrigger}>
+                  <Zap className="w-4 h-4 mr-2" />
+                  {t.toolbox.addTrigger}
+                </DropdownMenuItem>
+              </>
+            )}
             
             <DropdownMenuItem onClick={handleMoveUp} disabled={index === 0}>
               <ArrowUp className="w-4 h-4 mr-2" />
@@ -521,6 +601,10 @@ function SequenceItemNode({
             <DropdownMenuItem onClick={handleMoveDown}>
               <ArrowDown className="w-4 h-4 mr-2" />
               {t.editor.moveDown}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSelectParent} disabled={!parentId}>
+              <ChevronUp className="w-4 h-4 mr-2" />
+              {t.editor.selectParent}
             </DropdownMenuItem>
             
             {isContainer && (
@@ -538,6 +622,10 @@ function SequenceItemNode({
             )}
             
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleCopyType}>
+              <Terminal className="w-4 h-4 mr-2" />
+              {t.editor.copyType}
+            </DropdownMenuItem>
             
             <DropdownMenuItem onClick={handleDelete} className="text-red-400">
               <Trash2 className="w-4 h-4 mr-2" />
@@ -555,29 +643,33 @@ function SequenceItemNode({
       
       {/* Conditions */}
       {isContainer && item.isExpanded && item.conditions && item.conditions.length > 0 && (
-        <div className="ml-4 mt-1 mb-1" style={{ paddingLeft: `${depth * 16 + 16}px` }}>
-          <div className="text-xs text-yellow-400/70 mb-1">{t.toolbox.conditions}:</div>
-          {item.conditions.map((condition) => (
-            <ConditionNode 
-              key={condition.id} 
-              condition={condition} 
-              containerId={item.id}
-            />
-          ))}
+        <div className="ml-2 sm:ml-4 mt-0.5 sm:mt-1 mb-0.5 sm:mb-1" style={{ paddingLeft: `${Math.max(depth * 10, 4) + 12}px` }}>
+          <div className="text-[10px] sm:text-xs text-yellow-400/70 mb-0.5 sm:mb-1 font-medium">{t.toolbox.conditions}:</div>
+          <div className="space-y-0.5">
+            {item.conditions.map((condition) => (
+              <ConditionNode 
+                key={condition.id} 
+                condition={condition} 
+                containerId={item.id}
+              />
+            ))}
+          </div>
         </div>
       )}
       
       {/* Triggers */}
       {isContainer && item.isExpanded && item.triggers && item.triggers.length > 0 && (
-        <div className="ml-4 mt-1 mb-1" style={{ paddingLeft: `${depth * 16 + 16}px` }}>
-          <div className="text-xs text-purple-400/70 mb-1">{t.toolbox.triggers}:</div>
-          {item.triggers.map((trigger) => (
-            <TriggerNode 
-              key={trigger.id} 
-              trigger={trigger} 
-              containerId={item.id}
-            />
-          ))}
+        <div className="ml-2 sm:ml-4 mt-0.5 sm:mt-1 mb-0.5 sm:mb-1" style={{ paddingLeft: `${Math.max(depth * 10, 4) + 12}px` }}>
+          <div className="text-[10px] sm:text-xs text-purple-400/70 mb-0.5 sm:mb-1 font-medium">{t.toolbox.triggers}:</div>
+          <div className="space-y-0.5">
+            {item.triggers.map((trigger) => (
+              <TriggerNode 
+                key={trigger.id} 
+                trigger={trigger} 
+                containerId={item.id}
+              />
+            ))}
+          </div>
         </div>
       )}
       
@@ -607,7 +699,8 @@ function SequenceItemNode({
       </ContextMenuTrigger>
       
       {/* Right-click Context Menu Content */}
-      <ContextMenuContent className="min-w-[160px]">
+      <ContextMenuContent className="min-w-[200px] max-w-[90vw]">
+        <ContextMenuLabel>{t.editor.itemActions}</ContextMenuLabel>
         <ContextMenuItem onClick={handleDuplicate}>
           <Copy className="w-4 h-4 mr-2" />
           {t.common.duplicate}
@@ -629,6 +722,33 @@ function SequenceItemNode({
         </ContextMenuItem>
         
         <ContextMenuSeparator />
+        <ContextMenuItem onClick={handleInsertBefore}>
+          <ArrowUp className="w-4 h-4 mr-2" />
+          {t.editor.insertBefore}
+        </ContextMenuItem>
+        <ContextMenuItem onClick={handleInsertAfter}>
+          <ArrowDown className="w-4 h-4 mr-2" />
+          {t.editor.insertAfter}
+        </ContextMenuItem>
+        {isContainer && (
+          <ContextMenuItem onClick={handleInsertChild}>
+            <ChevronRight className="w-4 h-4 mr-2" />
+            {t.editor.insertInside}
+          </ContextMenuItem>
+        )}
+        {isContainer && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={handleAddCondition}>
+              <Repeat className="w-4 h-4 mr-2" />
+              {t.toolbox.addCondition}
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleAddTrigger}>
+              <Zap className="w-4 h-4 mr-2" />
+              {t.toolbox.addTrigger}
+            </ContextMenuItem>
+          </>
+        )}
         
         <ContextMenuItem onClick={handleMoveUp} disabled={index === 0}>
           <ArrowUp className="w-4 h-4 mr-2" />
@@ -655,6 +775,10 @@ function SequenceItemNode({
         )}
         
         <ContextMenuSeparator />
+        <ContextMenuItem onClick={handleCopyType}>
+          <Terminal className="w-4 h-4 mr-2" />
+          {t.editor.copyType}
+        </ContextMenuItem>
         
         <ContextMenuItem onClick={handleDelete} className="text-red-400">
           <Trash2 className="w-4 h-4 mr-2" />
@@ -711,14 +835,14 @@ function ConditionNode({ condition, containerId }: ConditionNodeProps) {
         selectCondition(condition.id);
       }}
       className={`
-        flex items-center gap-2 px-2 py-1 text-sm rounded cursor-pointer
-        ${isSelected ? 'bg-yellow-600/20 ring-1 ring-yellow-500' : 'hover:bg-accent/50'}
+        group flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm rounded-md cursor-pointer touch-manipulation
+        ${isSelected ? 'bg-yellow-600/20 ring-1 ring-yellow-500' : 'hover:bg-accent/50 active:bg-accent/70'}
       `}
     >
-      <Repeat className="w-3 h-3 text-yellow-400" />
+      <Repeat className="w-3 h-3 text-yellow-400 shrink-0" />
       <span className="flex-1 truncate text-yellow-200">{getTranslatedConditionName()}</span>
       {condition.data.Iterations !== undefined && (
-        <span className="text-xs text-yellow-400/70">
+        <span className="text-[10px] sm:text-xs text-yellow-400/70 tabular-nums shrink-0">
           {String(condition.data.CompletedIterations || 0)}/{String(condition.data.Iterations)}
         </span>
       )}
@@ -727,7 +851,8 @@ function ConditionNode({ condition, containerId }: ConditionNodeProps) {
           e.stopPropagation();
           deleteCondition(containerId, condition.id);
         }}
-        className="p-0.5 hover:bg-accent rounded opacity-0 group-hover:opacity-100"
+        className="p-1 hover:bg-destructive/20 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
+        aria-label="Delete condition"
       >
         <Trash2 className="w-3 h-3 text-muted-foreground" />
       </button>
@@ -762,18 +887,19 @@ function TriggerNode({ trigger, containerId }: TriggerNodeProps) {
         selectTrigger(trigger.id);
       }}
       className={`
-        flex items-center gap-2 px-2 py-1 text-sm rounded cursor-pointer
-        ${isSelected ? 'bg-purple-600/20 ring-1 ring-purple-500' : 'hover:bg-accent/50'}
+        group flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm rounded-md cursor-pointer touch-manipulation
+        ${isSelected ? 'bg-purple-600/20 ring-1 ring-purple-500' : 'hover:bg-accent/50 active:bg-accent/70'}
       `}
     >
-      <Zap className="w-3 h-3 text-purple-400" />
+      <Zap className="w-3 h-3 text-purple-400 shrink-0" />
       <span className="flex-1 truncate text-purple-200">{getTranslatedTriggerName()}</span>
       <button
         onClick={(e) => {
           e.stopPropagation();
           deleteTrigger(containerId, trigger.id);
         }}
-        className="p-0.5 hover:bg-accent rounded opacity-0 group-hover:opacity-100"
+        className="p-1 hover:bg-destructive/20 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
+        aria-label="Delete trigger"
       >
         <Trash2 className="w-3 h-3 text-muted-foreground" />
       </button>
@@ -843,19 +969,19 @@ export function SequenceTree() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`
-        min-h-full rounded-lg border-2 border-dashed transition-colors
-        ${isDragOver ? 'border-primary bg-primary/10' : 'border-transparent'}
+        min-h-full rounded-lg border-2 border-dashed transition-all duration-200
+        ${isDragOver ? 'border-primary bg-primary/5' : 'border-transparent'}
         ${items.length === 0 ? 'border-border' : ''}
       `}
     >
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-          <Box className="w-12 h-12 mb-4 opacity-50" />
-          <p className="text-sm">{t.editor.noInstructions}</p>
-          <p className="text-xs mt-1">{t.editor.dragHint}</p>
+        <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-muted-foreground px-4">
+          <Box className="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 opacity-50" />
+          <p className="text-xs sm:text-sm text-center">{t.editor.noInstructions}</p>
+          <p className="text-[10px] sm:text-xs mt-1 text-center opacity-70">{t.editor.dragHint}</p>
         </div>
       ) : (
-        <div className="space-y-0.5">
+        <div className="space-y-0.5 sm:space-y-1">
           {items.map((item, index) => (
             <SequenceItemNode
               key={item.id}

@@ -201,7 +201,7 @@ export function OnboardingTour({ forceShow = false }: OnboardingTourProps) {
       {/* Tour Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent 
-          className={`sm:max-w-md z-101 ${
+          className={`max-w-[90vw] sm:max-w-md z-101 p-4 sm:p-6 ${
             isCenterPosition ? '' : 'fixed'
           }`}
           style={
@@ -211,62 +211,63 @@ export function OnboardingTour({ forceShow = false }: OnboardingTourProps) {
           }
         >
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-400" />
-              <DialogTitle>{t.onboarding[step.titleKey]}</DialogTitle>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 shrink-0" />
+              <DialogTitle className="text-base sm:text-lg">{t.onboarding[step.titleKey]}</DialogTitle>
             </div>
-            <DialogDescription className="text-sm text-zinc-400">
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
               {t.onboarding[step.descKey]}
             </DialogDescription>
           </DialogHeader>
 
           {/* Progress indicator */}
-          <div className="flex items-center gap-2 py-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 py-2">
             {TOUR_STEPS.map((_, index) => (
               <div
                 key={index}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  index <= currentStep ? 'bg-blue-500' : 'bg-zinc-700'
+                className={`h-1 sm:h-1.5 flex-1 rounded-full transition-colors ${
+                  index <= currentStep ? 'bg-primary' : 'bg-muted'
                 }`}
               />
             ))}
           </div>
-          <p className="text-xs text-zinc-500 text-center">{stepProgress}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground text-center">{stepProgress}</p>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <div className="flex items-center gap-2 mr-auto">
+          <DialogFooter className="flex-col gap-3 sm:gap-2 pt-2">
+            <div className="flex items-center gap-2 w-full sm:mr-auto sm:w-auto">
               <Checkbox
                 id="dont-show"
                 checked={dontShowAgain}
                 onCheckedChange={(checked) => setDontShowAgain(checked === true)}
+                className="h-4 w-4"
               />
-              <Label htmlFor="dont-show" className="text-xs text-zinc-400 cursor-pointer">
+              <Label htmlFor="dont-show" className="text-[11px] sm:text-xs text-muted-foreground cursor-pointer">
                 {t.onboarding.dontShowAgain}
               </Label>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               {!isFirstStep && (
-                <Button variant="outline" size="sm" onClick={handlePrev}>
-                  <ChevronLeft className="w-4 h-4 mr-1" />
+                <Button variant="outline" size="sm" onClick={handlePrev} className="h-8 sm:h-9 text-xs sm:text-sm">
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                   {t.onboarding.prev}
                 </Button>
               )}
 
               {isFirstStep && (
-                <Button variant="ghost" size="sm" onClick={handleSkip}>
+                <Button variant="ghost" size="sm" onClick={handleSkip} className="h-8 sm:h-9 text-xs sm:text-sm">
                   {t.onboarding.skip}
                 </Button>
               )}
 
               {isLastStep ? (
-                <Button size="sm" onClick={handleFinish}>
+                <Button size="sm" onClick={handleFinish} className="h-8 sm:h-9 text-xs sm:text-sm">
                   {t.onboarding.finish}
                 </Button>
               ) : (
-                <Button size="sm" onClick={handleNext}>
+                <Button size="sm" onClick={handleNext} className="h-8 sm:h-9 text-xs sm:text-sm">
                   {t.onboarding.next}
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 sm:ml-1" />
                 </Button>
               )}
             </div>
@@ -329,12 +330,13 @@ export function TourHelpButton() {
             variant="ghost"
             size="sm"
             onClick={() => setShowTour(true)}
-            className="text-zinc-400 hover:text-zinc-200"
+            className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+            aria-label={t.onboarding.startTour}
           >
             <HelpCircle className="w-4 h-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{t.onboarding.startTour}</TooltipContent>
+        <TooltipContent className="hidden sm:block">{t.onboarding.startTour}</TooltipContent>
       </Tooltip>
       {showTour && <OnboardingTour forceShow />}
     </>
