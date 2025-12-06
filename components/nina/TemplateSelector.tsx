@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useMemo } from 'react';
-import { 
-  LayoutTemplate, 
-  Plus, 
-  Trash2, 
+import { useState, useCallback, useMemo } from "react";
+import {
+  LayoutTemplate,
+  Plus,
+  Trash2,
   Star,
   User,
   ChevronRight,
   Pencil,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,14 +33,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  useMultiSequenceStore, 
+} from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  useMultiSequenceStore,
   type SequenceTemplate,
-} from '@/lib/nina/multi-sequence-store';
-import { useI18n } from '@/lib/i18n';
+  selectEditorMode,
+} from "@/lib/nina/multi-sequence-store";
+import { useI18n } from "@/lib/i18n";
 
 interface TemplateCardProps {
   template: SequenceTemplate;
@@ -51,36 +58,45 @@ interface TemplateCardProps {
   displayDescription?: string;
 }
 
-function TemplateCard({ template, onApply, onDelete, onEdit, displayName, displayDescription }: TemplateCardProps) {
+function TemplateCard({
+  template,
+  onApply,
+  onDelete,
+  onEdit,
+  displayName,
+  displayDescription,
+}: TemplateCardProps) {
   const { t } = useI18n();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
-  const itemCount = 
-    template.sequence.startItems.length + 
-    template.sequence.targetItems.length + 
+
+  const itemCount =
+    template.sequence.startItems.length +
+    template.sequence.targetItems.length +
     template.sequence.endItems.length;
 
   return (
     <>
-      <Card 
+      <Card
         className="group cursor-pointer hover:border-primary/50 active:bg-accent/50 transition-all touch-manipulation"
         onClick={onApply}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onApply()}
+        onKeyDown={(e) => e.key === "Enter" && onApply()}
       >
         <CardHeader className="p-2.5 sm:p-3 pb-1.5 sm:pb-2">
           <div className="flex items-start justify-between gap-1.5 sm:gap-2">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              {template.category === 'default' ? (
+              {template.category === "default" ? (
                 <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 shrink-0" />
               ) : (
                 <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 shrink-0" />
               )}
-              <CardTitle className="text-xs sm:text-sm truncate">{displayName || template.name}</CardTitle>
+              <CardTitle className="text-xs sm:text-sm truncate">
+                {displayName || template.name}
+              </CardTitle>
             </div>
             <div className="flex items-center gap-1">
-              {onEdit && template.category === 'custom' && (
+              {onEdit && template.category === "custom" && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -116,7 +132,10 @@ function TemplateCard({ template, onApply, onDelete, onEdit, displayName, displa
         </CardHeader>
         <CardContent className="p-2.5 sm:p-3 pt-0">
           <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
-            <Badge variant="secondary" className="h-4 sm:h-5 text-[9px] sm:text-[10px] px-1 sm:px-1.5">
+            <Badge
+              variant="secondary"
+              className="h-4 sm:h-5 text-[9px] sm:text-[10px] px-1 sm:px-1.5"
+            >
               {itemCount} {t.toolbox.items}
             </Badge>
             <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -133,8 +152,10 @@ function TemplateCard({ template, onApply, onDelete, onEdit, displayName, displa
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="mt-0">{t.common.cancel}</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel className="mt-0">
+              {t.common.cancel}
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => {
                 setShowDeleteConfirm(false);
                 onDelete?.();
@@ -154,12 +175,19 @@ interface SaveTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (name: string, description: string) => void;
-  mode?: 'create' | 'edit';
+  mode?: "create" | "edit";
   initialName?: string;
   initialDescription?: string;
 }
 
-function SaveTemplateDialog({ open, onOpenChange, onSave, mode = 'create', initialName = '', initialDescription = '' }: SaveTemplateDialogProps) {
+function SaveTemplateDialog({
+  open,
+  onOpenChange,
+  onSave,
+  mode = "create",
+  initialName = "",
+  initialDescription = "",
+}: SaveTemplateDialogProps) {
   const { t } = useI18n();
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
@@ -176,7 +204,9 @@ function SaveTemplateDialog({ open, onOpenChange, onSave, mode = 'create', initi
       <DialogContent className="max-w-[90vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">
-            {mode === 'create' ? t.templates.saveAsTemplate : t.templates.editTemplate}
+            {mode === "create"
+              ? t.templates.saveAsTemplate
+              : t.templates.editTemplate}
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
             {t.templates.templateDescription}
@@ -184,7 +214,9 @@ function SaveTemplateDialog({ open, onOpenChange, onSave, mode = 'create', initi
         </DialogHeader>
         <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
           <div className="grid gap-1.5 sm:gap-2">
-            <Label htmlFor="template-name" className="text-xs sm:text-sm">{t.templates.templateName}</Label>
+            <Label htmlFor="template-name" className="text-xs sm:text-sm">
+              {t.templates.templateName}
+            </Label>
             <Input
               id="template-name"
               value={name}
@@ -194,7 +226,9 @@ function SaveTemplateDialog({ open, onOpenChange, onSave, mode = 'create', initi
             />
           </div>
           <div className="grid gap-1.5 sm:gap-2">
-            <Label htmlFor="template-desc" className="text-xs sm:text-sm">{t.templates.templateDescription}</Label>
+            <Label htmlFor="template-desc" className="text-xs sm:text-sm">
+              {t.templates.templateDescription}
+            </Label>
             <Input
               id="template-desc"
               value={description}
@@ -205,11 +239,21 @@ function SaveTemplateDialog({ open, onOpenChange, onSave, mode = 'create', initi
           </div>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
+          >
             {t.common.cancel}
           </Button>
-          <Button onClick={handleSave} disabled={!name.trim()} className="w-full sm:w-auto">
-            {mode === 'create' ? t.templates.createTemplate : t.templates.editTemplate}
+          <Button
+            onClick={handleSave}
+            disabled={!name.trim()}
+            className="w-full sm:w-auto"
+          >
+            {mode === "create"
+              ? t.templates.createTemplate
+              : t.templates.editTemplate}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -226,83 +270,115 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
   const [open, setOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<SequenceTemplate | null>(null);
-  
-  const applyTemplate = useMultiSequenceStore(state => state.applyTemplate);
-  const deleteTemplate = useMultiSequenceStore(state => state.deleteTemplate);
-  const saveAsTemplate = useMultiSequenceStore(state => state.saveAsTemplate);
-  const updateTemplate = useMultiSequenceStore(state => state.updateTemplate);
-  const templates = useMultiSequenceStore(state => state.templates);
-  
-  // Memoize filtered templates
-  const defaultTemplates = useMemo(() => templates.filter(t => t.category === 'default'), [templates]);
-  const customTemplates = useMemo(() => templates.filter(t => t.category === 'custom'), [templates]);
+  const [editingTemplate, setEditingTemplate] =
+    useState<SequenceTemplate | null>(null);
 
-  const handleApplyTemplate = useCallback((templateId: string) => {
-    applyTemplate(templateId);
-    setOpen(false);
-  }, [applyTemplate]);
+  const applyTemplate = useMultiSequenceStore((state) => state.applyTemplate);
+  const deleteTemplate = useMultiSequenceStore((state) => state.deleteTemplate);
+  const saveAsTemplate = useMultiSequenceStore((state) => state.saveAsTemplate);
+  const updateTemplate = useMultiSequenceStore((state) => state.updateTemplate);
+  const templates = useMultiSequenceStore((state) => state.templates);
+  const editorMode = useMultiSequenceStore(selectEditorMode);
 
-  const handleDeleteTemplate = useCallback((templateId: string) => {
-    deleteTemplate(templateId);
-  }, [deleteTemplate]);
+  // Memoize filtered templates - filter by current editor mode
+  // In normal mode, show only normal mode templates
+  // In advanced mode, show all templates (both normal and advanced)
+  const defaultTemplates = useMemo(
+    () =>
+      templates.filter(
+        (t) =>
+          t.category === "default" &&
+          (editorMode === "advanced" || t.mode === "normal"),
+      ),
+    [templates, editorMode],
+  );
+  const customTemplates = useMemo(
+    () =>
+      templates.filter(
+        (t) =>
+          t.category === "custom" &&
+          (editorMode === "advanced" || t.mode === "normal"),
+      ),
+    [templates, editorMode],
+  );
 
-  const handleSaveAsTemplate = useCallback((name: string, description: string) => {
-    if (activeTabId) {
-      saveAsTemplate(activeTabId, name, description);
-    }
-  }, [activeTabId, saveAsTemplate]);
+  const handleApplyTemplate = useCallback(
+    (templateId: string) => {
+      applyTemplate(templateId);
+      setOpen(false);
+    },
+    [applyTemplate],
+  );
+
+  const handleDeleteTemplate = useCallback(
+    (templateId: string) => {
+      deleteTemplate(templateId);
+    },
+    [deleteTemplate],
+  );
+
+  const handleSaveAsTemplate = useCallback(
+    (name: string, description: string) => {
+      if (activeTabId) {
+        saveAsTemplate(activeTabId, name, description);
+      }
+    },
+    [activeTabId, saveAsTemplate],
+  );
 
   const handleEditTemplate = useCallback((template: SequenceTemplate) => {
     setEditingTemplate(template);
     setEditDialogOpen(true);
   }, []);
 
-  const handleSaveEditTemplate = useCallback((name: string, description: string) => {
-    if (editingTemplate) {
-      updateTemplate(editingTemplate.id, { name, description });
-      setEditingTemplate(null);
-    }
-  }, [editingTemplate, updateTemplate]);
+  const handleSaveEditTemplate = useCallback(
+    (name: string, description: string) => {
+      if (editingTemplate) {
+        updateTemplate(editingTemplate.id, { name, description });
+        setEditingTemplate(null);
+      }
+    },
+    [editingTemplate, updateTemplate],
+  );
 
   const localizedDefaults = {
-    'template-basic-imaging': {
+    "template-basic-imaging": {
       name: t.templates.basicImaging,
       description: t.templates.basicImagingDesc,
     },
-    'template-dual-target': {
+    "template-dual-target": {
       name: t.templates.multiTarget,
       description: t.templates.multiTargetDesc,
     },
-    'template-meridian-monitor': {
+    "template-meridian-monitor": {
       name: t.templates.meridianMonitor,
       description: t.templates.meridianMonitorDesc,
     },
-    'template-autofocus-dither': {
+    "template-autofocus-dither": {
       name: t.templates.autofocusDither,
       description: t.templates.autofocusDitherDesc,
     },
-    'template-calibration-suite': {
+    "template-calibration-suite": {
       name: t.templates.calibrationSuite,
       description: t.templates.calibrationSuiteDesc,
     },
-    'template-planetary': {
+    "template-planetary": {
       name: t.templates.planetarySession,
       description: t.templates.planetarySessionDesc,
     },
-    'template-mosaic': {
+    "template-mosaic": {
       name: t.templates.mosaicSession,
       description: t.templates.mosaicSessionDesc,
     },
-    'template-startup': {
+    "template-startup": {
       name: t.templates.startupRoutine,
       description: t.templates.startupRoutineDesc,
     },
-    'template-flat-capture': {
+    "template-flat-capture": {
       name: t.templates.flatCapture,
       description: t.templates.flatCaptureDesc,
     },
-    'template-shutdown': {
+    "template-shutdown": {
       name: t.templates.shutdownRoutine,
       description: t.templates.shutdownRoutineDesc,
     },
@@ -312,9 +388,15 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-1 sm:gap-1.5 h-8 px-2 sm:px-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 sm:gap-1.5 h-8 px-2 sm:px-3"
+          >
             <LayoutTemplate className="w-4 h-4" />
-            <span className="hidden sm:inline text-xs">{t.templates.title}</span>
+            <span className="hidden sm:inline text-xs">
+              {t.templates.title}
+            </span>
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] p-4 sm:p-6">
@@ -327,15 +409,20 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
               {t.templates.useTemplate}
             </DialogDescription>
           </DialogHeader>
-          
+
           <ScrollArea className="max-h-[50vh] sm:max-h-[55vh] pr-2 sm:pr-4">
             <div className="space-y-4 sm:space-y-6">
               {/* Default Templates */}
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
                   <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500" />
-                  <h3 className="font-medium text-xs sm:text-sm">{t.templates.defaultTemplates}</h3>
-                  <Badge variant="secondary" className="h-4 sm:h-5 text-[9px] sm:text-[10px] px-1 sm:px-1.5">
+                  <h3 className="font-medium text-xs sm:text-sm">
+                    {t.templates.defaultTemplates}
+                  </h3>
+                  <Badge
+                    variant="secondary"
+                    className="h-4 sm:h-5 text-[9px] sm:text-[10px] px-1 sm:px-1.5"
+                  >
                     {defaultTemplates.length}
                   </Badge>
                 </div>
@@ -345,8 +432,16 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
                       key={template.id}
                       template={template}
                       onApply={() => handleApplyTemplate(template.id)}
-                      displayName={localizedDefaults[template.id as keyof typeof localizedDefaults]?.name}
-                      displayDescription={localizedDefaults[template.id as keyof typeof localizedDefaults]?.description}
+                      displayName={
+                        localizedDefaults[
+                          template.id as keyof typeof localizedDefaults
+                        ]?.name
+                      }
+                      displayDescription={
+                        localizedDefaults[
+                          template.id as keyof typeof localizedDefaults
+                        ]?.description
+                      }
                     />
                   ))}
                 </div>
@@ -358,8 +453,13 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
                   <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
-                  <h3 className="font-medium text-xs sm:text-sm">{t.templates.customTemplates}</h3>
-                  <Badge variant="secondary" className="h-4 sm:h-5 text-[9px] sm:text-[10px] px-1 sm:px-1.5">
+                  <h3 className="font-medium text-xs sm:text-sm">
+                    {t.templates.customTemplates}
+                  </h3>
+                  <Badge
+                    variant="secondary"
+                    className="h-4 sm:h-5 text-[9px] sm:text-[10px] px-1 sm:px-1.5"
+                  >
                     {customTemplates.length}
                   </Badge>
                 </div>
@@ -378,7 +478,9 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-6 sm:py-8 text-muted-foreground">
                     <LayoutTemplate className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-50" />
-                    <p className="text-xs sm:text-sm">{t.templates.noTemplates}</p>
+                    <p className="text-xs sm:text-sm">
+                      {t.templates.noTemplates}
+                    </p>
                   </div>
                 )}
               </div>
@@ -398,12 +500,18 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
                   className="gap-1 sm:gap-1.5 flex-1 sm:flex-initial text-xs sm:text-sm h-9"
                 >
                   <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden xs:inline">{t.templates.saveAsTemplate}</span>
+                  <span className="hidden xs:inline">
+                    {t.templates.saveAsTemplate}
+                  </span>
                   <span className="xs:hidden">Save</span>
                 </Button>
               )}
             </div>
-            <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto h-9 text-xs sm:text-sm">
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="w-full sm:w-auto h-9 text-xs sm:text-sm"
+            >
               {t.common.close}
             </Button>
           </DialogFooter>
@@ -411,7 +519,7 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
       </Dialog>
 
       <SaveTemplateDialog
-        key={`create-${saveDialogOpen ? 'open' : 'closed'}`}
+        key={`create-${saveDialogOpen ? "open" : "closed"}`}
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
         onSave={handleSaveAsTemplate}
@@ -419,7 +527,7 @@ export function TemplateSelector({ activeTabId }: TemplateSelectorProps) {
       />
 
       <SaveTemplateDialog
-        key={editingTemplate?.id || 'edit-dialog'}
+        key={editingTemplate?.id || "edit-dialog"}
         open={editDialogOpen}
         onOpenChange={(val) => {
           setEditDialogOpen(val);

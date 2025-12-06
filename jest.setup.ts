@@ -3,32 +3,32 @@
  * This file is executed before each test file
  */
 
-import '@testing-library/jest-dom';
-import React from 'react';
+import "@testing-library/jest-dom";
+import React from "react";
 
 // Mock Next.js Image component
-jest.mock('next/image', () => ({
+jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
-    return React.createElement('img', props);
+    return React.createElement("img", props);
   },
 }));
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter() {
     return {
       push: jest.fn(),
       replace: jest.fn(),
       prefetch: jest.fn(),
       back: jest.fn(),
-      pathname: '/',
+      pathname: "/",
       query: {},
-      asPath: '/',
+      asPath: "/",
     };
   },
   usePathname() {
-    return '/';
+    return "/";
   },
   useSearchParams() {
     return new URLSearchParams();
@@ -41,4 +41,3 @@ jest.mock('next/navigation', () => ({
 //   error: jest.fn(),
 //   warn: jest.fn(),
 // };
-

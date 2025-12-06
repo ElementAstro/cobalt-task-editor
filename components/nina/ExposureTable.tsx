@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { memo, useState, useCallback } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import { memo, useState, useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   Plus,
   Trash2,
@@ -9,18 +9,18 @@ import {
   ChevronUp,
   ChevronDown,
   RotateCcw,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -28,32 +28,37 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { useSimpleSequenceStore } from '@/lib/nina/simple-sequence-store';
+} from "@/components/ui/tooltip";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useSimpleSequenceStore } from "@/lib/nina/simple-sequence-store";
 import {
   SimpleExposure,
   ImageType,
   SequenceEntityStatus,
   DEFAULT_FILTERS,
   DEFAULT_BINNING_OPTIONS,
-} from '@/lib/nina/simple-sequence-types';
-import { useI18n } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
+} from "@/lib/nina/simple-sequence-types";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 interface ExposureTableProps {
   targetId: string;
   exposures: SimpleExposure[];
 }
 
-export const ExposureTable = memo(function ExposureTable({ targetId, exposures }: ExposureTableProps) {
+export const ExposureTable = memo(function ExposureTable({
+  targetId,
+  exposures,
+}: ExposureTableProps) {
   const { t } = useI18n();
-  const [selectedExposureId, setSelectedExposureId] = useState<string | null>(null);
+  const [selectedExposureId, setSelectedExposureId] = useState<string | null>(
+    null,
+  );
 
   const {
     addExposure,
@@ -64,16 +69,18 @@ export const ExposureTable = memo(function ExposureTable({ targetId, exposures }
     updateExposure,
     resetExposureProgress,
     resetAllExposureProgress,
-  } = useSimpleSequenceStore(useShallow((state) => ({
-    addExposure: state.addExposure,
-    removeExposure: state.removeExposure,
-    duplicateExposure: state.duplicateExposure,
-    moveExposureUp: state.moveExposureUp,
-    moveExposureDown: state.moveExposureDown,
-    updateExposure: state.updateExposure,
-    resetExposureProgress: state.resetExposureProgress,
-    resetAllExposureProgress: state.resetAllExposureProgress,
-  })));
+  } = useSimpleSequenceStore(
+    useShallow((state) => ({
+      addExposure: state.addExposure,
+      removeExposure: state.removeExposure,
+      duplicateExposure: state.duplicateExposure,
+      moveExposureUp: state.moveExposureUp,
+      moveExposureDown: state.moveExposureDown,
+      updateExposure: state.updateExposure,
+      resetExposureProgress: state.resetExposureProgress,
+      resetAllExposureProgress: state.resetAllExposureProgress,
+    })),
+  );
 
   const handleAddExposure = useCallback(() => {
     addExposure(targetId);
@@ -132,7 +139,9 @@ export const ExposureTable = memo(function ExposureTable({ targetId, exposures }
               <span className="hidden sm:inline">{t.common.add}</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{t.simple?.addExposure || 'Add Exposure'}</TooltipContent>
+          <TooltipContent>
+            {t.simple?.addExposure || "Add Exposure"}
+          </TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -187,7 +196,9 @@ export const ExposureTable = memo(function ExposureTable({ targetId, exposures }
                 size="icon"
                 className="h-8 w-8"
                 onClick={handleMoveDown}
-                disabled={!selectedExposureId || selectedIndex === exposures.length - 1}
+                disabled={
+                  !selectedExposureId || selectedIndex === exposures.length - 1
+                }
               >
                 <ChevronDown className="w-4 h-4" />
               </Button>
@@ -200,22 +211,35 @@ export const ExposureTable = memo(function ExposureTable({ targetId, exposures }
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="sm" onClick={handleResetProgress} disabled={!selectedExposureId}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetProgress}
+              disabled={!selectedExposureId}
+            >
               <RotateCcw className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">{t.simple?.reset || 'Reset'}</span>
+              <span className="hidden sm:inline">
+                {t.simple?.reset || "Reset"}
+              </span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{t.simple?.resetProgress || 'Reset Progress'}</TooltipContent>
+          <TooltipContent>
+            {t.simple?.resetProgress || "Reset Progress"}
+          </TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="sm" onClick={handleResetAll}>
               <RotateCcw className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">{t.simple?.resetAll || 'Reset All'}</span>
+              <span className="hidden sm:inline">
+                {t.simple?.resetAll || "Reset All"}
+              </span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{t.simple?.resetAllProgress || 'Reset All Progress'}</TooltipContent>
+          <TooltipContent>
+            {t.simple?.resetAllProgress || "Reset All Progress"}
+          </TooltipContent>
         </Tooltip>
       </div>
 
@@ -226,24 +250,50 @@ export const ExposureTable = memo(function ExposureTable({ targetId, exposures }
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-10 text-center">#</TableHead>
-                <TableHead className="w-16 text-center">{t.properties.enabled}</TableHead>
-                <TableHead className="w-24 text-center">{t.simple?.progress || 'Progress'}</TableHead>
-                <TableHead className="w-20 text-center">{t.properties.totalCount}</TableHead>
-                <TableHead className="w-24 text-center">{t.properties.exposureTime}</TableHead>
-                <TableHead className="w-24 text-center">{t.properties.imageType}</TableHead>
-                <TableHead className="w-24 text-center">{t.properties.filter}</TableHead>
-                <TableHead className="w-24 text-center">{t.properties.binning}</TableHead>
-                <TableHead className="w-16 text-center">{t.simple?.dither || 'Dither'}</TableHead>
-                <TableHead className="w-20 text-center">{t.simple?.ditherEvery || 'Every #'}</TableHead>
-                <TableHead className="w-20 text-center">{t.properties.gain}</TableHead>
-                <TableHead className="w-20 text-center">{t.properties.offset}</TableHead>
+                <TableHead className="w-16 text-center">
+                  {t.properties.enabled}
+                </TableHead>
+                <TableHead className="w-24 text-center">
+                  {t.simple?.progress || "Progress"}
+                </TableHead>
+                <TableHead className="w-20 text-center">
+                  {t.properties.totalCount}
+                </TableHead>
+                <TableHead className="w-24 text-center">
+                  {t.properties.exposureTime}
+                </TableHead>
+                <TableHead className="w-24 text-center">
+                  {t.properties.imageType}
+                </TableHead>
+                <TableHead className="w-24 text-center">
+                  {t.properties.filter}
+                </TableHead>
+                <TableHead className="w-24 text-center">
+                  {t.properties.binning}
+                </TableHead>
+                <TableHead className="w-16 text-center">
+                  {t.simple?.dither || "Dither"}
+                </TableHead>
+                <TableHead className="w-20 text-center">
+                  {t.simple?.ditherEvery || "Every #"}
+                </TableHead>
+                <TableHead className="w-20 text-center">
+                  {t.properties.gain}
+                </TableHead>
+                <TableHead className="w-20 text-center">
+                  {t.properties.offset}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {exposures.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
-                    {t.simple?.noExposures || 'No exposures. Click "Add" to create one.'}
+                  <TableCell
+                    colSpan={12}
+                    className="h-32 text-center text-muted-foreground"
+                  >
+                    {t.simple?.noExposures ||
+                      'No exposures. Click "Add" to create one.'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -280,7 +330,11 @@ interface ExposureRowProps {
   isSelected: boolean;
   onSelect: () => void;
   imageTypeOptions: string[];
-  updateExposure: (targetId: string, exposureId: string, updates: Partial<SimpleExposure>) => void;
+  updateExposure: (
+    targetId: string,
+    exposureId: string,
+    updates: Partial<SimpleExposure>,
+  ) => void;
 }
 
 const ExposureRow = memo(function ExposureRow({
@@ -297,13 +351,13 @@ const ExposureRow = memo(function ExposureRow({
   const getStatusColor = (status: SequenceEntityStatus) => {
     switch (status) {
       case SequenceEntityStatus.RUNNING:
-        return 'text-blue-400';
+        return "text-blue-400";
       case SequenceEntityStatus.FINISHED:
-        return 'text-green-400';
+        return "text-green-400";
       case SequenceEntityStatus.FAILED:
-        return 'text-red-400';
+        return "text-red-400";
       default:
-        return 'text-muted-foreground';
+        return "text-muted-foreground";
     }
   };
 
@@ -311,9 +365,9 @@ const ExposureRow = memo(function ExposureRow({
     <TableRow
       onClick={onSelect}
       className={cn(
-        'cursor-pointer transition-colors',
-        isSelected && 'bg-emerald-500/10 hover:bg-emerald-500/15',
-        !exposure.enabled && 'opacity-50'
+        "cursor-pointer transition-colors",
+        isSelected && "bg-emerald-500/10 hover:bg-emerald-500/15",
+        !exposure.enabled && "opacity-50",
       )}
     >
       {/* Index */}
@@ -334,7 +388,10 @@ const ExposureRow = memo(function ExposureRow({
 
       {/* Progress */}
       <TableCell className="text-center">
-        <Badge variant="outline" className={cn('tabular-nums', getStatusColor(exposure.status))}>
+        <Badge
+          variant="outline"
+          className={cn("tabular-nums", getStatusColor(exposure.status))}
+        >
           {exposure.progressCount} / {exposure.totalCount}
         </Badge>
       </TableCell>
@@ -345,7 +402,9 @@ const ExposureRow = memo(function ExposureRow({
           type="number"
           value={exposure.totalCount}
           onChange={(e) =>
-            updateExposure(targetId, exposure.id, { totalCount: parseInt(e.target.value) || 1 })
+            updateExposure(targetId, exposure.id, {
+              totalCount: parseInt(e.target.value) || 1,
+            })
           }
           onClick={(e) => e.stopPropagation()}
           className="h-7 w-16 text-center text-xs mx-auto"
@@ -359,7 +418,9 @@ const ExposureRow = memo(function ExposureRow({
           type="number"
           value={exposure.exposureTime}
           onChange={(e) =>
-            updateExposure(targetId, exposure.id, { exposureTime: parseFloat(e.target.value) || 1 })
+            updateExposure(targetId, exposure.id, {
+              exposureTime: parseFloat(e.target.value) || 1,
+            })
           }
           onClick={(e) => e.stopPropagation()}
           className="h-7 w-20 text-center text-xs mx-auto"
@@ -373,10 +434,15 @@ const ExposureRow = memo(function ExposureRow({
         <Select
           value={exposure.imageType}
           onValueChange={(value) =>
-            updateExposure(targetId, exposure.id, { imageType: value as ImageType })
+            updateExposure(targetId, exposure.id, {
+              imageType: value as ImageType,
+            })
           }
         >
-          <SelectTrigger className="h-7 w-20 text-xs mx-auto" onClick={(e) => e.stopPropagation()}>
+          <SelectTrigger
+            className="h-7 w-20 text-xs mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -392,9 +458,9 @@ const ExposureRow = memo(function ExposureRow({
       {/* Filter */}
       <TableCell className="text-center p-1">
         <Select
-          value={exposure.filter?.name || 'none'}
+          value={exposure.filter?.name || "none"}
           onValueChange={(value) => {
-            if (value === 'none') {
+            if (value === "none") {
               updateExposure(targetId, exposure.id, { filter: null });
             } else {
               const filter = DEFAULT_FILTERS.find((f) => f.name === value);
@@ -404,15 +470,22 @@ const ExposureRow = memo(function ExposureRow({
             }
           }}
         >
-          <SelectTrigger className="h-7 w-20 text-xs mx-auto" onClick={(e) => e.stopPropagation()}>
+          <SelectTrigger
+            className="h-7 w-20 text-xs mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none" className="text-xs">
-              {t.simple?.noFilter || 'None'}
+              {t.simple?.noFilter || "None"}
             </SelectItem>
             {DEFAULT_FILTERS.map((filter) => (
-              <SelectItem key={filter.name} value={filter.name} className="text-xs">
+              <SelectItem
+                key={filter.name}
+                value={filter.name}
+                className="text-xs"
+              >
                 {filter.name}
               </SelectItem>
             ))}
@@ -425,16 +498,23 @@ const ExposureRow = memo(function ExposureRow({
         <Select
           value={`${exposure.binning.x}x${exposure.binning.y}`}
           onValueChange={(value) => {
-            const [x, y] = value.split('x').map(Number);
+            const [x, y] = value.split("x").map(Number);
             updateExposure(targetId, exposure.id, { binning: { x, y } });
           }}
         >
-          <SelectTrigger className="h-7 w-16 text-xs mx-auto" onClick={(e) => e.stopPropagation()}>
+          <SelectTrigger
+            className="h-7 w-16 text-xs mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {DEFAULT_BINNING_OPTIONS.map((bin) => (
-              <SelectItem key={`${bin.x}x${bin.y}`} value={`${bin.x}x${bin.y}`} className="text-xs">
+              <SelectItem
+                key={`${bin.x}x${bin.y}`}
+                value={`${bin.x}x${bin.y}`}
+                className="text-xs"
+              >
                 {bin.x}x{bin.y}
               </SelectItem>
             ))}
@@ -459,7 +539,9 @@ const ExposureRow = memo(function ExposureRow({
           type="number"
           value={exposure.ditherEvery}
           onChange={(e) =>
-            updateExposure(targetId, exposure.id, { ditherEvery: parseInt(e.target.value) || 1 })
+            updateExposure(targetId, exposure.id, {
+              ditherEvery: parseInt(e.target.value) || 1,
+            })
           }
           onClick={(e) => e.stopPropagation()}
           className="h-7 w-14 text-center text-xs mx-auto"
@@ -474,7 +556,9 @@ const ExposureRow = memo(function ExposureRow({
           type="number"
           value={exposure.gain}
           onChange={(e) =>
-            updateExposure(targetId, exposure.id, { gain: parseInt(e.target.value) })
+            updateExposure(targetId, exposure.id, {
+              gain: parseInt(e.target.value),
+            })
           }
           onClick={(e) => e.stopPropagation()}
           className="h-7 w-16 text-center text-xs mx-auto"
@@ -489,7 +573,9 @@ const ExposureRow = memo(function ExposureRow({
           type="number"
           value={exposure.offset}
           onChange={(e) =>
-            updateExposure(targetId, exposure.id, { offset: parseInt(e.target.value) })
+            updateExposure(targetId, exposure.id, {
+              offset: parseInt(e.target.value),
+            })
           }
           onClick={(e) => e.stopPropagation()}
           className="h-7 w-16 text-center text-xs mx-auto"

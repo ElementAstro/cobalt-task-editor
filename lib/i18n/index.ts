@@ -1,9 +1,9 @@
 // i18n module exports
 
-export * from './types';
-export { 
-  I18nProvider, 
-  useI18n, 
+export * from "./types";
+export {
+  I18nProvider,
+  useI18n,
   useTranslations,
   useLocale,
   availableLocales,
@@ -15,7 +15,7 @@ export {
   getItemDescriptionKey,
   getConditionDescriptionKey,
   getTriggerDescriptionKey,
-} from './context';
-export type { Locale, Translations, I18nContextValue } from './types';
-export { en } from './locales/en';
-export { zh } from './locales/zh';
+} from "./context";
+export type { Locale, Translations, I18nContextValue } from "./types";
+export { en } from "./locales/en";
+export { zh } from "./locales/zh";

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   ChevronUp,
   ChevronDown,
@@ -9,17 +9,17 @@ import {
   Telescope,
   RotateCw,
   Clock,
-} from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { useSimpleSequenceStore } from '@/lib/nina/simple-sequence-store';
-import { useI18n } from '@/lib/i18n';
+} from "@/components/ui/collapsible";
+import { useSimpleSequenceStore } from "@/lib/nina/simple-sequence-store";
+import { useI18n } from "@/lib/i18n";
 
 export function StartEndOptions() {
   const { t } = useI18n();
@@ -33,14 +33,16 @@ export function StartEndOptions() {
     updateStartOptions,
     updateEndOptions,
     setEstimatedDownloadTime,
-  } = useSimpleSequenceStore(useShallow((state) => ({
-    startOptions: state.sequence.startOptions,
-    endOptions: state.sequence.endOptions,
-    estimatedDownloadTime: state.sequence.estimatedDownloadTime,
-    updateStartOptions: state.updateStartOptions,
-    updateEndOptions: state.updateEndOptions,
-    setEstimatedDownloadTime: state.setEstimatedDownloadTime,
-  })));
+  } = useSimpleSequenceStore(
+    useShallow((state) => ({
+      startOptions: state.sequence.startOptions,
+      endOptions: state.sequence.endOptions,
+      estimatedDownloadTime: state.sequence.estimatedDownloadTime,
+      updateStartOptions: state.updateStartOptions,
+      updateEndOptions: state.updateEndOptions,
+      setEstimatedDownloadTime: state.setEstimatedDownloadTime,
+    })),
+  );
 
   return (
     <div className="border-b border-border">
@@ -49,9 +51,15 @@ export function StartEndOptions() {
         <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-muted/50 transition-colors">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-sm font-medium">{t.simple?.startOptions || 'Start Options'}</span>
+            <span className="text-sm font-medium">
+              {t.simple?.startOptions || "Start Options"}
+            </span>
           </div>
-          {startOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {startOpen ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
         </CollapsibleTrigger>
         <CollapsibleContent className="px-3 pb-3 space-y-3">
           {/* Cool Camera */}
@@ -59,7 +67,9 @@ export function StartEndOptions() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Thermometer className="w-4 h-4 text-blue-400" />
-                <Label className="text-xs">{t.simple?.coolCamera || 'Cool Camera'}</Label>
+                <Label className="text-xs">
+                  {t.simple?.coolCamera || "Cool Camera"}
+                </Label>
               </div>
               <Checkbox
                 checked={startOptions.coolCameraAtSequenceStart}
@@ -71,12 +81,17 @@ export function StartEndOptions() {
             {startOptions.coolCameraAtSequenceStart && (
               <div className="grid grid-cols-2 gap-2 pl-6">
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">{t.properties.temperature} (°C)</Label>
+                  <Label className="text-[10px] text-muted-foreground">
+                    {t.properties.temperature} (°C)
+                  </Label>
                   <Input
                     type="number"
                     value={startOptions.coolCameraTemperature}
                     onChange={(e) =>
-                      updateStartOptions({ coolCameraTemperature: parseFloat(e.target.value) || -10 })
+                      updateStartOptions({
+                        coolCameraTemperature:
+                          parseFloat(e.target.value) || -10,
+                      })
                     }
                     className="h-7 text-xs"
                     min={-40}
@@ -84,12 +99,16 @@ export function StartEndOptions() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">{t.properties.duration} (s)</Label>
+                  <Label className="text-[10px] text-muted-foreground">
+                    {t.properties.duration} (s)
+                  </Label>
                   <Input
                     type="number"
                     value={startOptions.coolCameraDuration}
                     onChange={(e) =>
-                      updateStartOptions({ coolCameraDuration: parseInt(e.target.value) || 600 })
+                      updateStartOptions({
+                        coolCameraDuration: parseInt(e.target.value) || 600,
+                      })
                     }
                     className="h-7 text-xs"
                     min={0}
@@ -103,7 +122,9 @@ export function StartEndOptions() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Telescope className="w-4 h-4 text-emerald-400" />
-              <Label className="text-xs">{t.simple?.unparkMount || 'Unpark Mount'}</Label>
+              <Label className="text-xs">
+                {t.simple?.unparkMount || "Unpark Mount"}
+              </Label>
             </div>
             <Checkbox
               checked={startOptions.unparkMountAtSequenceStart}
@@ -117,7 +138,9 @@ export function StartEndOptions() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <RotateCw className="w-4 h-4 text-amber-400" />
-              <Label className="text-xs">{t.simple?.meridianFlip || 'Meridian Flip'}</Label>
+              <Label className="text-xs">
+                {t.simple?.meridianFlip || "Meridian Flip"}
+              </Label>
             </div>
             <Checkbox
               checked={startOptions.doMeridianFlip}
@@ -131,12 +154,16 @@ export function StartEndOptions() {
           <div className="space-y-1 pt-2 border-t border-border">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-xs">{t.simple?.downloadTime || 'Est. Download Time (s)'}</Label>
+              <Label className="text-xs">
+                {t.simple?.downloadTime || "Est. Download Time (s)"}
+              </Label>
             </div>
             <Input
               type="number"
               value={estimatedDownloadTime}
-              onChange={(e) => setEstimatedDownloadTime(parseFloat(e.target.value) || 5)}
+              onChange={(e) =>
+                setEstimatedDownloadTime(parseFloat(e.target.value) || 5)
+              }
               className="h-7 text-xs"
               min={0}
               step={0.5}
@@ -150,9 +177,15 @@ export function StartEndOptions() {
         <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-muted/50 transition-colors border-t border-border">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span className="text-sm font-medium">{t.simple?.endOptions || 'End Options'}</span>
+            <span className="text-sm font-medium">
+              {t.simple?.endOptions || "End Options"}
+            </span>
           </div>
-          {endOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {endOpen ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
         </CollapsibleTrigger>
         <CollapsibleContent className="px-3 pb-3 space-y-3">
           {/* Warm Camera */}
@@ -160,7 +193,9 @@ export function StartEndOptions() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Thermometer className="w-4 h-4 text-orange-400" />
-                <Label className="text-xs">{t.simple?.warmCamera || 'Warm Camera'}</Label>
+                <Label className="text-xs">
+                  {t.simple?.warmCamera || "Warm Camera"}
+                </Label>
               </div>
               <Checkbox
                 checked={endOptions.warmCamAtSequenceEnd}
@@ -172,12 +207,16 @@ export function StartEndOptions() {
             {endOptions.warmCamAtSequenceEnd && (
               <div className="pl-6">
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">{t.properties.duration} (s)</Label>
+                  <Label className="text-[10px] text-muted-foreground">
+                    {t.properties.duration} (s)
+                  </Label>
                   <Input
                     type="number"
                     value={endOptions.warmCameraDuration}
                     onChange={(e) =>
-                      updateEndOptions({ warmCameraDuration: parseInt(e.target.value) || 600 })
+                      updateEndOptions({
+                        warmCameraDuration: parseInt(e.target.value) || 600,
+                      })
                     }
                     className="h-7 text-xs w-24"
                     min={0}
@@ -191,7 +230,9 @@ export function StartEndOptions() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Telescope className="w-4 h-4 text-slate-400" />
-              <Label className="text-xs">{t.simple?.parkMount || 'Park Mount'}</Label>
+              <Label className="text-xs">
+                {t.simple?.parkMount || "Park Mount"}
+              </Label>
             </div>
             <Checkbox
               checked={endOptions.parkMountAtSequenceEnd}

@@ -25,7 +25,7 @@ The pipeline runs on:
 
 ### 1. Code Quality & Security
 
-**Runs on:** All pushes and pull requests  
+**Runs on:** All pushes and pull requests
 **Duration:** ~2-3 minutes
 
 This job performs:
@@ -39,7 +39,7 @@ This job performs:
 
 ### 2. Test Suite
 
-**Runs on:** All pushes and pull requests  
+**Runs on:** All pushes and pull requests
 **Duration:** ~3-5 minutes
 
 This job performs:
@@ -61,7 +61,7 @@ This job performs:
 
 ### 3. Deploy Preview
 
-**Runs on:** Pull requests only  
+**Runs on:** Pull requests only
 **Duration:** ~2-3 minutes
 
 Automatically deploys preview versions of the application for pull requests.
@@ -88,7 +88,7 @@ Automatically deploys preview versions of the application for pull requests.
 
 ### 4. Deploy Production (DISABLED BY DEFAULT)
 
-**Runs on:** Pushes to `main` branch (when enabled)  
+**Runs on:** Pushes to `main` branch (when enabled)
 **Duration:** ~2-3 minutes
 
 ⚠️ **This job is commented out by default for safety.**
@@ -96,6 +96,7 @@ Automatically deploys preview versions of the application for pull requests.
 **To Enable Production Deployments:**
 
 1. **Set up GitHub Environment Protection:**
+
    - Go to `Settings > Environments`
    - Create a new environment named `production`
    - Add required reviewers (recommended)
@@ -103,6 +104,7 @@ Automatically deploys preview versions of the application for pull requests.
    - Add environment secrets
 
 2. **Configure Required Secrets:**
+
    - `VERCEL_TOKEN`
    - `VERCEL_ORG_ID`
    - `VERCEL_PROJECT_ID`
@@ -120,7 +122,7 @@ Automatically deploys preview versions of the application for pull requests.
 
 ### 5. Build Tauri Desktop Application
 
-**Runs on:** All pushes and pull requests  
+**Runs on:** All pushes and pull requests
 **Duration:** ~10-20 minutes per platform
 
 Builds cross-platform desktop applications for:
@@ -210,7 +212,7 @@ Update `src-tauri/tauri.conf.json` for code signing:
 
 ### 6. Create Release
 
-**Runs on:** Tags starting with `v` (e.g., `v1.0.0`)  
+**Runs on:** Tags starting with `v` (e.g., `v1.0.0`)
 **Duration:** ~1-2 minutes
 
 Automatically creates a GitHub release with all built artifacts when you push a version tag.
@@ -260,12 +262,12 @@ concurrency:
 
 All jobs upload artifacts that are retained for 7-30 days:
 
-| Artifact | Retention | Description |
-|----------|-----------|-------------|
-| `test-results` | 30 days | JUnit XML test results |
-| `coverage-report` | 30 days | HTML coverage reports |
-| `nextjs-build` | 7 days | Built Next.js application |
-| `tauri-*` | 30 days | Platform-specific installers |
+| Artifact          | Retention | Description                  |
+| ----------------- | --------- | ---------------------------- |
+| `test-results`    | 30 days   | JUnit XML test results       |
+| `coverage-report` | 30 days   | HTML coverage reports        |
+| `nextjs-build`    | 7 days    | Built Next.js application    |
+| `tauri-*`         | 30 days   | Platform-specific installers |
 
 ## Required GitHub Secrets
 

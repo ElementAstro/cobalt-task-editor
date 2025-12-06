@@ -6,7 +6,7 @@ describe("Button", () => {
   it("renders a button with text", () => {
     render(<Button>Click me</Button>);
     expect(
-      screen.getByRole("button", { name: /click me/i })
+      screen.getByRole("button", { name: /click me/i }),
     ).toBeInTheDocument();
   });
 
@@ -93,7 +93,7 @@ describe("Button", () => {
     render(
       <Button asChild>
         <a href="/test">Link Button</a>
-      </Button>
+      </Button>,
     );
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("href", "/test");

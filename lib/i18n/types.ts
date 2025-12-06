@@ -1,6 +1,6 @@
 // i18n Types
 
-export type Locale = 'en' | 'zh';
+export type Locale = "en" | "zh";
 
 export interface Translations {
   // Common
@@ -84,6 +84,14 @@ export interface Translations {
     itemActions: string;
     addCondition: string;
     addTrigger: string;
+    // Editor mode
+    normalMode: string;
+    advancedMode: string;
+    switchToNormal: string;
+    switchToAdvanced: string;
+    modeDescription: string;
+    normalModeDesc: string;
+    advancedModeDesc: string;
   };
 
   // Toolbox
@@ -271,6 +279,12 @@ export interface Translations {
     delete: string;
     duplicate: string;
     escape: string;
+    copy: string;
+    cut: string;
+    paste: string;
+    selectAll: string;
+    expandAll: string;
+    collapseAll: string;
   };
 
   // Messages
@@ -627,6 +641,47 @@ export interface Translations {
     autofocusAfterTemperatureChange: string;
     autofocusAfterTime: string;
     centerAfterDrift: string;
+  };
+
+  // Workflow View
+  workflow: {
+    title: string;
+    listView: string;
+    workflowView: string;
+    zoomIn: string;
+    zoomOut: string;
+    fitView: string;
+    resetView: string;
+    autoLayout: string;
+    layoutSmart: string;
+    layoutStandard: string;
+    layoutCompact: string;
+    layoutSpread: string;
+    layoutHorizontal: string;
+    autoRefresh: string;
+    dragHint: string;
+    emptyState: string;
+    // New workflow keys
+    align: string;
+    alignLeft: string;
+    alignCenter: string;
+    alignRight: string;
+    alignTop: string;
+    alignMiddle: string;
+    alignBottom: string;
+    distribute: string;
+    distributeH: string;
+    distributeV: string;
+    viewSettings: string;
+    gridSnap: string;
+    showMinimap: string;
+    areaBackgrounds: string;
+    shortcuts: string;
+    selected: string;
+    toggleEnabled: string;
+    moveToStart: string;
+    moveToTarget: string;
+    moveToEnd: string;
   };
 
   // Simple Sequence Editor

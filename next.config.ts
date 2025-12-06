@@ -16,7 +16,11 @@ const nextConfig: NextConfig = {
   },
   // Configure assetPrefix only for Tauri dev mode (when TAURI_DEV_HOST is set).
   // For regular browser dev mode, don't set assetPrefix to avoid CORS issues.
-  assetPrefix: isProd ? undefined : (isTauriDev ? `http://${internalHost}:3000` : undefined),
+  assetPrefix: isProd
+    ? undefined
+    : isTauriDev
+      ? `http://${internalHost}:3000`
+      : undefined,
 };
 
 export default nextConfig;

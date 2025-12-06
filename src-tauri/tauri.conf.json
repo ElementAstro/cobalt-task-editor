@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "react-quick-starter",
+  "productName": "Cobalt Task Editor",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.elementastro.cobalt-task-editor",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
@@ -12,11 +12,17 @@
   "app": {
     "windows": [
       {
-        "title": "react-quick-starter",
-        "width": 800,
-        "height": 600,
+        "title": "Cobalt Task Editor",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "center": true,
+        "decorations": true,
+        "transparent": false,
+        "dragDropEnabled": true
       }
     ],
     "security": {
@@ -32,6 +38,22 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "category": "Utility",
+    "shortDescription": "NINA Sequence Editor",
+    "longDescription": "A cross-platform desktop application for editing NINA astronomy sequences",
+    "copyright": "Copyright (c) 2024 ElementAstro",
+    "fileAssociations": [
+      {
+        "ext": ["json"],
+        "name": "NINA Sequence",
+        "role": "Editor"
+      },
+      {
+        "ext": ["ninaTargetSet"],
+        "name": "NINA Target Set",
+        "role": "Editor"
+      }
     ],
     "windows": {
       "certificateThumbprint": null,

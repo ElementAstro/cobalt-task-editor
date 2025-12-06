@@ -120,23 +120,23 @@ This command:
 
 ### Frontend Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start Next.js development server on port 3000 |
-| `pnpm build` | Build Next.js app for production (outputs to `out/` directory) |
-| `pnpm start` | Start Next.js production server (after `pnpm build`) |
-| `pnpm lint` | Run ESLint to check code quality |
-| `pnpm lint --fix` | Auto-fix ESLint issues |
+| Command           | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| `pnpm dev`        | Start Next.js development server on port 3000                  |
+| `pnpm build`      | Build Next.js app for production (outputs to `out/` directory) |
+| `pnpm start`      | Start Next.js production server (after `pnpm build`)           |
+| `pnpm lint`       | Run ESLint to check code quality                               |
+| `pnpm lint --fix` | Auto-fix ESLint issues                                         |
 
 ### Tauri (Desktop) Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm tauri dev` | Start Tauri development mode with hot-reload |
-| `pnpm tauri build` | Build production desktop application |
-| `pnpm tauri info` | Display Tauri environment information |
-| `pnpm tauri icon` | Generate app icons from source image |
-| `pnpm tauri --help` | Show all available Tauri commands |
+| Command             | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `pnpm tauri dev`    | Start Tauri development mode with hot-reload |
+| `pnpm tauri build`  | Build production desktop application         |
+| `pnpm tauri info`   | Display Tauri environment information        |
+| `pnpm tauri icon`   | Generate app icons from source image         |
+| `pnpm tauri --help` | Show all available Tauri commands            |
 
 ### Adding UI Components (shadcn/ui)
 
@@ -205,21 +205,23 @@ Edit `src-tauri/tauri.conf.json` to customize your desktop app:
 
 ```json
 {
-  "productName": "react-quick-starter",    // App name
-  "version": "0.1.0",                      // App version
-  "identifier": "com.tauri.dev",          // Unique app identifier
+  "productName": "react-quick-starter", // App name
+  "version": "0.1.0", // App version
+  "identifier": "com.tauri.dev", // Unique app identifier
   "build": {
-    "frontendDist": "../out",              // Next.js build output
-    "devUrl": "http://localhost:3000"      // Dev server URL
+    "frontendDist": "../out", // Next.js build output
+    "devUrl": "http://localhost:3000" // Dev server URL
   },
   "app": {
-    "windows": [{
-      "title": "react-quick-starter",      // Window title
-      "width": 800,                        // Default width
-      "height": 600,                       // Default height
-      "resizable": true,                   // Allow resizing
-      "fullscreen": false                  // Start fullscreen
-    }]
+    "windows": [
+      {
+        "title": "react-quick-starter", // Window title
+        "width": 800, // Default width
+        "height": 600, // Default height
+        "resizable": true, // Allow resizing
+        "fullscreen": false // Start fullscreen
+      }
+    ]
   }
 }
 ```
@@ -229,8 +231,8 @@ Edit `src-tauri/tauri.conf.json` to customize your desktop app:
 Configured in `components.json` and `tsconfig.json`:
 
 ```typescript
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 ```
 
 Available aliases:
@@ -355,6 +357,7 @@ See [Tauri Distribution Guide](https://tauri.app/v1/guides/distribution/) for de
    ```
 
 2. **Make changes**
+
    - Edit files in `app/`, `components/`, or `lib/`
    - Changes auto-reload in the browser/desktop app
 

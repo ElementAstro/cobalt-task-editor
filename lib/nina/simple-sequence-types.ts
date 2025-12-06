@@ -6,25 +6,25 @@
 // ============================================================================
 
 export enum SequenceMode {
-  STANDARD = 'STANDARD',
-  ROTATE = 'ROTATE',
+  STANDARD = "STANDARD",
+  ROTATE = "ROTATE",
 }
 
 export enum ImageType {
-  LIGHT = 'LIGHT',
-  DARK = 'DARK',
-  BIAS = 'BIAS',
-  FLAT = 'FLAT',
-  SNAPSHOT = 'SNAPSHOT',
+  LIGHT = "LIGHT",
+  DARK = "DARK",
+  BIAS = "BIAS",
+  FLAT = "FLAT",
+  SNAPSHOT = "SNAPSHOT",
 }
 
 export enum SequenceEntityStatus {
-  CREATED = 'CREATED',
-  RUNNING = 'RUNNING',
-  FINISHED = 'FINISHED',
-  FAILED = 'FAILED',
-  SKIPPED = 'SKIPPED',
-  DISABLED = 'DISABLED',
+  CREATED = "CREATED",
+  RUNNING = "RUNNING",
+  FINISHED = "FINISHED",
+  FAILED = "FAILED",
+  SKIPPED = "SKIPPED",
+  DISABLED = "DISABLED",
 }
 
 // ============================================================================
@@ -55,13 +55,13 @@ export interface FilterInfo {
 }
 
 export const DEFAULT_FILTERS: FilterInfo[] = [
-  { name: 'L', position: 0 },
-  { name: 'R', position: 1 },
-  { name: 'G', position: 2 },
-  { name: 'B', position: 3 },
-  { name: 'Ha', position: 4 },
-  { name: 'OIII', position: 5 },
-  { name: 'SII', position: 6 },
+  { name: "L", position: 0 },
+  { name: "R", position: 1 },
+  { name: "G", position: 2 },
+  { name: "B", position: 3 },
+  { name: "Ha", position: 4 },
+  { name: "OIII", position: 5 },
+  { name: "SII", position: 6 },
 ];
 
 // ============================================================================
@@ -91,15 +91,17 @@ export function createDefaultCoordinates(): Coordinates {
 }
 
 export function formatRA(coords: Coordinates): string {
-  return `${coords.raHours.toString().padStart(2, '0')}h ${coords.raMinutes.toString().padStart(2, '0')}m ${coords.raSeconds.toFixed(1)}s`;
+  return `${coords.raHours.toString().padStart(2, "0")}h ${coords.raMinutes.toString().padStart(2, "0")}m ${coords.raSeconds.toFixed(1)}s`;
 }
 
 export function formatDec(coords: Coordinates): string {
-  const sign = coords.negativeDec ? '-' : '+';
-  return `${sign}${Math.abs(coords.decDegrees).toString().padStart(2, '0')}° ${coords.decMinutes.toString().padStart(2, '0')}' ${coords.decSeconds.toFixed(1)}"`;
+  const sign = coords.negativeDec ? "-" : "+";
+  return `${sign}${Math.abs(coords.decDegrees).toString().padStart(2, "0")}° ${coords.decMinutes.toString().padStart(2, "0")}' ${coords.decSeconds.toFixed(1)}"`;
 }
 
-export function parseHMS(hms: string): { hours: number; minutes: number; seconds: number } | null {
+export function parseHMS(
+  hms: string,
+): { hours: number; minutes: number; seconds: number } | null {
   // Parse formats like "00h 42m 44.3s" or "00:42:44.3"
   const match = hms.match(/(\d+)[h:\s]+(\d+)[m:\s]+(\d+\.?\d*)/);
   if (!match) return null;
@@ -110,12 +112,17 @@ export function parseHMS(hms: string): { hours: number; minutes: number; seconds
   };
 }
 
-export function parseDMS(dms: string): { degrees: number; minutes: number; seconds: number; negative: boolean } | null {
+export function parseDMS(dms: string): {
+  degrees: number;
+  minutes: number;
+  seconds: number;
+  negative: boolean;
+} | null {
   // Parse formats like "+41° 16' 9.0"" or "41:16:09.0"
   const match = dms.match(/([+-]?)(\d+)[°:\s]+(\d+)[':\s]+(\d+\.?\d*)/);
   if (!match) return null;
   return {
-    negative: match[1] === '-',
+    negative: match[1] === "-",
     degrees: parseInt(match[2], 10),
     minutes: parseInt(match[3], 10),
     seconds: parseFloat(match[4]),
@@ -130,7 +137,7 @@ export interface SimpleExposure {
   id: string;
   enabled: boolean;
   status: SequenceEntityStatus;
-  
+
   // Exposure settings
   exposureTime: number; // seconds
   imageType: ImageType;
@@ -138,11 +145,11 @@ export interface SimpleExposure {
   binning: BinningMode;
   gain: number; // -1 = camera default
   offset: number; // -1 = camera default
-  
+
   // Progress
   totalCount: number;
   progressCount: number;
-  
+
   // Dithering
   dither: boolean;
   ditherEvery: number;
@@ -175,13 +182,13 @@ export interface SimpleTarget {
   name: string;
   status: SequenceEntityStatus;
   fileName?: string;
-  
+
   // Target info
   targetName: string;
   coordinates: Coordinates;
   positionAngle: number;
   rotation: number;
-  
+
   // Target options
   delay: number; // seconds before starting
   mode: SequenceMode;
@@ -189,7 +196,7 @@ export interface SimpleTarget {
   centerTarget: boolean;
   rotateTarget: boolean;
   startGuiding: boolean;
-  
+
   // Autofocus options
   autoFocusOnStart: boolean;
   autoFocusOnFilterChange: boolean;
@@ -201,10 +208,10 @@ export interface SimpleTarget {
   autoFocusAfterTemperatureChangeAmount: number; // degrees
   autoFocusAfterHFRChange: boolean;
   autoFocusAfterHFRChangeAmount: number; // percentage
-  
+
   // Exposures
   exposures: SimpleExposure[];
-  
+
   // ETA
   estimatedStartTime?: Date;
   estimatedEndTime?: Date;
@@ -214,9 +221,9 @@ export interface SimpleTarget {
 export function createDefaultTarget(): SimpleTarget {
   return {
     id: crypto.randomUUID(),
-    name: 'Target',
+    name: "Target",
     status: SequenceEntityStatus.CREATED,
-    targetName: 'Target',
+    targetName: "Target",
     coordinates: createDefaultCoordinates(),
     positionAngle: 0,
     rotation: 0,
@@ -289,24 +296,24 @@ export interface SimpleSequence {
   title: string;
   savePath?: string;
   isDirty: boolean;
-  
+
   // Start/End options
   startOptions: StartOptions;
   endOptions: EndOptions;
-  
+
   // Targets
   targets: SimpleTarget[];
   selectedTargetId: string | null;
   activeTargetId: string | null;
-  
+
   // Status
   isRunning: boolean;
-  
+
   // ETA
   overallStartTime?: Date;
   overallEndTime?: Date;
   overallDuration?: number; // seconds
-  
+
   // Download time estimation
   estimatedDownloadTime: number; // seconds
 }
@@ -315,7 +322,7 @@ export function createDefaultSimpleSequence(): SimpleSequence {
   const firstTarget = createDefaultTarget();
   return {
     id: crypto.randomUUID(),
-    title: 'Target Set',
+    title: "Target Set",
     isDirty: false,
     startOptions: createDefaultStartOptions(),
     endOptions: createDefaultEndOptions(),
@@ -346,7 +353,7 @@ export interface TelescopiusTarget {
 
 export function calculateExposureRuntime(
   exposure: SimpleExposure,
-  downloadTime: number
+  downloadTime: number,
 ): number {
   if (!exposure.enabled) return 0;
   const remaining = exposure.totalCount - exposure.progressCount;
@@ -356,7 +363,7 @@ export function calculateExposureRuntime(
 
 export function calculateTargetRuntime(
   target: SimpleTarget,
-  downloadTime: number
+  downloadTime: number,
 ): number {
   let total = target.delay;
   for (const exposure of target.exposures) {
@@ -366,13 +373,13 @@ export function calculateTargetRuntime(
 }
 
 export function formatDuration(seconds: number): string {
-  if (seconds < 0) return '0s';
-  
+  if (seconds < 0) return "0s";
+
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  
+
   if (days > 0) {
     return `${days}d ${hours}h ${minutes}m ${secs}s`;
   } else if (hours > 0) {
@@ -385,10 +392,10 @@ export function formatDuration(seconds: number): string {
 }
 
 export function formatTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
     hour12: false,
   });
 }

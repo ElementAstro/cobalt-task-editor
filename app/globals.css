@@ -134,7 +134,7 @@
   /* Custom scrollbar styling */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: theme('colors.zinc.600') transparent;
+    scrollbar-color: theme("colors.zinc.600") transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
@@ -144,11 +144,11 @@
     background: transparent;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: theme('colors.zinc.600');
+    background-color: theme("colors.zinc.600");
     border-radius: 3px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: theme('colors.zinc.500');
+    background-color: theme("colors.zinc.500");
   }
 
   /* Touch-friendly tap highlight */
