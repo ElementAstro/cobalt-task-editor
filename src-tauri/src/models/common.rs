@@ -80,26 +80,17 @@ impl Default for BinningMode {
 }
 
 /// Filter information
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterInfo {
+    #[serde(default)]
     pub name: String,
+    #[serde(default)]
     pub position: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub focus_offset: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_focus_exposure_time: Option<f64>,
-}
-
-impl Default for FilterInfo {
-    fn default() -> Self {
-        Self {
-            name: String::new(),
-            position: 0,
-            focus_offset: None,
-            auto_focus_exposure_time: None,
-        }
-    }
 }
 
 /// Application settings

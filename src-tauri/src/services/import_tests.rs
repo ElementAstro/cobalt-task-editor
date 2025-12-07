@@ -12,7 +12,7 @@ mod tests {
     fn test_parse_csv_basic() {
         let csv = "name,ra,dec\nM31,00:42:44,+41:16:09\nM42,05:35:16,-05:23:28";
         let result = parse_csv_content(csv, None);
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 2);
         assert_eq!(result.targets[0].target_name, "M31");
@@ -25,7 +25,7 @@ mod tests {
 "Andromeda Galaxy",00:42:44,+41:16:09
 "Orion Nebula",05:35:16,-05:23:28"#;
         let result = parse_csv_content(csv, None);
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 2);
         assert_eq!(result.targets[0].target_name, "Andromeda Galaxy");
@@ -35,7 +35,7 @@ mod tests {
     fn test_parse_csv_decimal_coords() {
         let csv = "name,ra,dec\nTest,12.5,45.5";
         let result = parse_csv_content(csv, None);
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 1);
         assert_eq!(result.targets[0].coordinates.ra_hours, 12);
@@ -45,7 +45,7 @@ mod tests {
     fn test_parse_csv_empty() {
         let csv = "";
         let result = parse_csv_content(csv, None);
-        
+
         assert!(!result.success);
         assert!(result.errors.len() > 0);
     }
@@ -54,7 +54,7 @@ mod tests {
     fn test_parse_csv_missing_columns() {
         let csv = "name,other\nM31,test";
         let result = parse_csv_content(csv, None);
-        
+
         // Should fail due to missing RA/Dec
         assert_eq!(result.targets.len(), 0);
     }
@@ -71,9 +71,9 @@ mod tests {
             delimiter: Some(','),
             has_header: true,
         };
-        
+
         let result = parse_csv_content(csv, Some(mapping));
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 1);
         assert_eq!(result.targets[0].target_name, "M31");
@@ -87,9 +87,9 @@ mod tests {
             has_header: true,
             ..Default::default()
         };
-        
+
         let result = parse_csv_content(csv, Some(mapping));
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 1);
     }
@@ -100,7 +100,11 @@ mod tests {
 
     #[test]
     fn test_detect_csv_format_telescopius() {
-        let headers = vec!["Catalogue Entry".to_string(), "Familiar Name".to_string(), "RA".to_string()];
+        let headers = vec![
+            "Catalogue Entry".to_string(),
+            "Familiar Name".to_string(),
+            "RA".to_string(),
+        ];
         let format = detect_csv_format(&headers);
         assert!(matches!(format, DetectedCsvFormat::Telescopius));
     }
@@ -132,7 +136,7 @@ mod tests {
             ("12.5", true),
             ("invalid", false),
         ];
-        
+
         for (input, should_succeed) in test_cases {
             let result = parse_csv_content(&format!("name,ra,dec\nTest,{},+45:00:00", input), None);
             if should_succeed {
@@ -150,7 +154,7 @@ mod tests {
             ("45.5", true),
             ("+45 30 00", true),
         ];
-        
+
         for (input, should_succeed) in test_cases {
             let result = parse_csv_content(&format!("name,ra,dec\nTest,12:00:00,{}", input), None);
             if should_succeed {
@@ -163,7 +167,7 @@ mod tests {
     fn test_parse_negative_dec() {
         let csv = "name,ra,dec\nTest,12:00:00,-45:30:00";
         let result = parse_csv_content(csv, None);
-        
+
         assert!(result.success);
         assert!(result.targets[0].coordinates.negative_dec);
     }
@@ -176,7 +180,7 @@ mod tests {
     fn test_parse_stellarium_simple() {
         let content = "# Stellarium skylist\nM31 0.712 41.27\nM42 5.588 -5.39";
         let result = parse_stellarium_skylist(content);
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 2);
     }
@@ -185,7 +189,7 @@ mod tests {
     fn test_parse_stellarium_with_comments() {
         let content = "# Comment line\n// Another comment\nM31 0.712 41.27";
         let result = parse_stellarium_skylist(content);
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 1);
     }
@@ -194,7 +198,7 @@ mod tests {
     fn test_parse_stellarium_json() {
         let content = r#"{"name": "M31", "ra": 10.68, "dec": 41.27}"#;
         let result = parse_stellarium_skylist(content);
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 1);
     }
@@ -213,9 +217,9 @@ PA=0
 [M42]
 RA=05:35:16
 Dec=-05:23:28"#;
-        
+
         let result = parse_voyager_format(content);
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 2);
         assert_eq!(result.targets[0].target_name, "M31");
@@ -235,9 +239,9 @@ Dec=-05:23:28"#;
         <Dec>+41:16:09</Dec>
     </Target>
 </Targets>"#;
-        
+
         let result = parse_xml_targets(xml, "Test");
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 1);
         assert_eq!(result.targets[0].target_name, "M31");
@@ -251,9 +255,9 @@ Dec=-05:23:28"#;
     <Dec>+45:00:00</Dec>
     <PA>45.0</PA>
 </Target>"#;
-        
+
         let result = parse_xml_targets(xml, "Test");
-        
+
         assert!(result.success);
         assert_eq!(result.targets.len(), 1);
         assert!((result.targets[0].position_angle - 45.0).abs() < 0.1);
@@ -267,7 +271,7 @@ Dec=-05:23:28"#;
     fn test_parse_fits_header_too_small() {
         let data = vec![0u8; 100];
         let result = parse_fits_header(&data);
-        
+
         assert!(result.is_err());
     }
 
@@ -275,13 +279,15 @@ Dec=-05:23:28"#;
     fn test_parse_fits_header_basic() {
         // Create a minimal FITS header
         let mut header = vec![b' '; 2880];
-        let object_line = b"OBJECT  = 'M31'                                                                 ";
+        let object_line =
+            b"OBJECT  = 'M31'                                                                 ";
         header[..80].copy_from_slice(object_line);
-        let end_line = b"END                                                                             ";
+        let end_line =
+            b"END                                                                             ";
         header[80..160].copy_from_slice(end_line);
-        
+
         let result = parse_fits_header(&header);
-        
+
         assert!(result.is_ok());
         let info = result.unwrap();
         assert_eq!(info.object_name, Some("M31".to_string()));
@@ -295,7 +301,7 @@ Dec=-05:23:28"#;
     fn test_import_result_statistics() {
         let csv = "name,ra,dec\nM31,00:42:44,+41:16:09\nBad,invalid,data\nM42,05:35:16,-05:23:28";
         let result = parse_csv_content(csv, None);
-        
+
         assert_eq!(result.total_rows, 3);
         assert_eq!(result.imported_count, 2);
         assert_eq!(result.skipped_count, 1);
@@ -309,7 +315,7 @@ Dec=-05:23:28"#;
     fn test_parse_xml_content_auto_detect() {
         let xml = r#"<?xml version="1.0"?><Target><Name>Test</Name><RA>12:00:00</RA><Dec>+45:00:00</Dec></Target>"#;
         let result = parse_xml_content(xml);
-        
+
         assert!(result.success);
     }
 }

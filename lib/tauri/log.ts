@@ -2,12 +2,12 @@
  * Logging with Tauri/browser fallback
  */
 
-import { isTauri, invoke } from './platform';
+import { isTauri, invoke } from "./platform";
 
 export interface LogEntry {
   id: string;
   timestamp: string;
-  level: 'debug' | 'info' | 'warning' | 'error';
+  level: "debug" | "info" | "warning" | "error";
   category: string;
   message: string;
   details?: Record<string, unknown>;
@@ -29,16 +29,19 @@ function addToBuffer(entry: LogEntry): void {
 /**
  * Log debug message
  */
-export async function logDebug(category: string, message: string): Promise<void> {
+export async function logDebug(
+  category: string,
+  message: string,
+): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('log_debug', { category, message });
+    return invoke<void>("log_debug", { category, message });
   }
-  
+
   console.debug(`[${category}]`, message);
   addToBuffer({
     id: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
-    level: 'debug',
+    level: "debug",
     category,
     message,
   });
@@ -47,16 +50,19 @@ export async function logDebug(category: string, message: string): Promise<void>
 /**
  * Log info message
  */
-export async function logInfo(category: string, message: string): Promise<void> {
+export async function logInfo(
+  category: string,
+  message: string,
+): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('log_info', { category, message });
+    return invoke<void>("log_info", { category, message });
   }
-  
+
   console.info(`[${category}]`, message);
   addToBuffer({
     id: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
-    level: 'info',
+    level: "info",
     category,
     message,
   });
@@ -65,16 +71,19 @@ export async function logInfo(category: string, message: string): Promise<void> 
 /**
  * Log warning message
  */
-export async function logWarning(category: string, message: string): Promise<void> {
+export async function logWarning(
+  category: string,
+  message: string,
+): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('log_warning', { category, message });
+    return invoke<void>("log_warning", { category, message });
   }
-  
+
   console.warn(`[${category}]`, message);
   addToBuffer({
     id: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
-    level: 'warning',
+    level: "warning",
     category,
     message,
   });
@@ -83,16 +92,19 @@ export async function logWarning(category: string, message: string): Promise<voi
 /**
  * Log error message
  */
-export async function logError(category: string, message: string): Promise<void> {
+export async function logError(
+  category: string,
+  message: string,
+): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('log_error', { category, message });
+    return invoke<void>("log_error", { category, message });
   }
-  
+
   console.error(`[${category}]`, message);
   addToBuffer({
     id: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
-    level: 'error',
+    level: "error",
     category,
     message,
   });
@@ -102,20 +114,29 @@ export async function logError(category: string, message: string): Promise<void>
  * Log with details
  */
 export async function logWithDetails(
-  level: 'debug' | 'info' | 'warning' | 'error',
+  level: "debug" | "info" | "warning" | "error",
   category: string,
   message: string,
-  details: Record<string, unknown>
+  details: Record<string, unknown>,
 ): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('log_with_details', { level, category, message, details });
+    return invoke<void>("log_with_details", {
+      level,
+      category,
+      message,
+      details,
+    });
   }
-  
-  const logFn = level === 'error' ? console.error 
-    : level === 'warning' ? console.warn 
-    : level === 'debug' ? console.debug 
-    : console.info;
-  
+
+  const logFn =
+    level === "error"
+      ? console.error
+      : level === "warning"
+        ? console.warn
+        : level === "debug"
+          ? console.debug
+          : console.info;
+
   logFn(`[${category}]`, message, details);
   addToBuffer({
     id: crypto.randomUUID(),
@@ -134,18 +155,18 @@ export async function logOperation(
   operation: string,
   target: string,
   success: boolean,
-  error?: string
+  error?: string,
 ): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('log_operation', { operation, target, success, error });
+    return invoke<void>("log_operation", { operation, target, success, error });
   }
-  
-  const level = success ? 'info' : 'error';
-  const message = success 
+
+  const level = success ? "info" : "error";
+  const message = success
     ? `${operation} completed: ${target}`
-    : `${operation} failed: ${target} - ${error || 'Unknown error'}`;
-  
-  await logWithDetails(level, 'operation', message, {
+    : `${operation} failed: ${target} - ${error || "Unknown error"}`;
+
+  await logWithDetails(level, "operation", message, {
     operation,
     target,
     success,
@@ -158,18 +179,18 @@ export async function logOperation(
  */
 export async function getRecentLogs(
   count: number = 100,
-  levelFilter?: 'debug' | 'info' | 'warning' | 'error'
+  levelFilter?: "debug" | "info" | "warning" | "error",
 ): Promise<LogEntry[]> {
   if (isTauri()) {
-    return invoke<LogEntry[]>('get_recent_logs', { count, levelFilter });
+    return invoke<LogEntry[]>("get_recent_logs", { count, levelFilter });
   }
-  
+
   let logs = [...LOG_BUFFER].reverse();
-  
+
   if (levelFilter) {
-    logs = logs.filter(l => l.level === levelFilter);
+    logs = logs.filter((l) => l.level === levelFilter);
   }
-  
+
   return logs.slice(0, count);
 }
 
@@ -178,14 +199,13 @@ export async function getRecentLogs(
  */
 export async function getLogsByCategory(
   category: string,
-  count: number = 100
+  count: number = 100,
 ): Promise<LogEntry[]> {
   if (isTauri()) {
-    return invoke<LogEntry[]>('get_logs_by_category', { category, count });
+    return invoke<LogEntry[]>("get_logs_by_category", { category, count });
   }
-  
-  return LOG_BUFFER
-    .filter(l => l.category === category)
+
+  return LOG_BUFFER.filter((l) => l.category === category)
     .reverse()
     .slice(0, count);
 }
@@ -195,9 +215,9 @@ export async function getLogsByCategory(
  */
 export async function clearLogBuffer(): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('clear_log_buffer');
+    return invoke<void>("clear_log_buffer");
   }
-  
+
   LOG_BUFFER.length = 0;
 }
 
@@ -206,7 +226,7 @@ export async function clearLogBuffer(): Promise<void> {
  */
 export async function flushLogs(): Promise<number> {
   if (isTauri()) {
-    return invoke<number>('flush_logs');
+    return invoke<number>("flush_logs");
   }
   return 0;
 }
@@ -216,9 +236,9 @@ export async function flushLogs(): Promise<number> {
  */
 export async function readLogFile(date: string): Promise<string> {
   if (isTauri()) {
-    return invoke<string>('read_log_file', { date });
+    return invoke<string>("read_log_file", { date });
   }
-  return '';
+  return "";
 }
 
 /**
@@ -226,7 +246,7 @@ export async function readLogFile(date: string): Promise<string> {
  */
 export async function listLogFiles(): Promise<string[]> {
   if (isTauri()) {
-    return invoke<string[]>('list_log_files');
+    return invoke<string[]>("list_log_files");
   }
   return [];
 }

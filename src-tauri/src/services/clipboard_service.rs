@@ -1,11 +1,11 @@
 //! Clipboard service for copy/paste operations
 
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use parking_lot::RwLock;
-use once_cell::sync::Lazy;
 
-use crate::models::{SimpleTarget, SimpleExposure, EditorSequenceItem};
+use crate::models::{EditorSequenceItem, SimpleExposure, SimpleTarget};
 
 /// Clipboard content types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,9 +30,8 @@ pub enum ClipboardContent {
 }
 
 /// Internal clipboard storage
-static CLIPBOARD: Lazy<Arc<RwLock<Option<ClipboardContent>>>> = Lazy::new(|| {
-    Arc::new(RwLock::new(None))
-});
+static CLIPBOARD: Lazy<Arc<RwLock<Option<ClipboardContent>>>> =
+    Lazy::new(|| Arc::new(RwLock::new(None)));
 
 /// Copy content to internal clipboard
 pub fn copy_to_clipboard(content: ClipboardContent) {
@@ -57,17 +56,17 @@ pub fn has_clipboard_content() -> bool {
 /// Check if clipboard has specific content type
 pub fn has_clipboard_content_type(content_type: &str) -> bool {
     if let Some(content) = CLIPBOARD.read().as_ref() {
-        match (content_type, content) {
-            ("target", ClipboardContent::Target(_)) => true,
-            ("targets", ClipboardContent::Targets(_)) => true,
-            ("exposure", ClipboardContent::Exposure(_)) => true,
-            ("exposures", ClipboardContent::Exposures(_)) => true,
-            ("sequence_item", ClipboardContent::SequenceItem(_)) => true,
-            ("sequence_items", ClipboardContent::SequenceItems(_)) => true,
-            ("text", ClipboardContent::Text(_)) => true,
-            ("json", ClipboardContent::Json(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (content_type, content),
+            ("target", ClipboardContent::Target(_))
+                | ("targets", ClipboardContent::Targets(_))
+                | ("exposure", ClipboardContent::Exposure(_))
+                | ("exposures", ClipboardContent::Exposures(_))
+                | ("sequence_item", ClipboardContent::SequenceItem(_))
+                | ("sequence_items", ClipboardContent::SequenceItems(_))
+                | ("text", ClipboardContent::Text(_))
+                | ("json", ClipboardContent::Json(_))
+        )
     } else {
         false
     }
@@ -117,20 +116,23 @@ pub fn paste_target() -> Option<SimpleTarget> {
 /// Paste targets from clipboard
 pub fn paste_targets() -> Option<Vec<SimpleTarget>> {
     match get_clipboard_content()? {
-        ClipboardContent::Targets(targets) => {
-            Some(targets.into_iter().map(|mut target| {
-                target.id = uuid::Uuid::new_v4().to_string();
-                target.name = format!("{} (Copy)", target.name);
-                target.target_name = format!("{} (Copy)", target.target_name);
-                for exp in &mut target.exposures {
-                    exp.id = uuid::Uuid::new_v4().to_string();
-                    exp.progress_count = 0;
-                    exp.status = crate::models::SequenceEntityStatus::Created;
-                }
-                target.status = crate::models::SequenceEntityStatus::Created;
-                target
-            }).collect())
-        }
+        ClipboardContent::Targets(targets) => Some(
+            targets
+                .into_iter()
+                .map(|mut target| {
+                    target.id = uuid::Uuid::new_v4().to_string();
+                    target.name = format!("{} (Copy)", target.name);
+                    target.target_name = format!("{} (Copy)", target.target_name);
+                    for exp in &mut target.exposures {
+                        exp.id = uuid::Uuid::new_v4().to_string();
+                        exp.progress_count = 0;
+                        exp.status = crate::models::SequenceEntityStatus::Created;
+                    }
+                    target.status = crate::models::SequenceEntityStatus::Created;
+                    target
+                })
+                .collect(),
+        ),
         ClipboardContent::Target(mut target) => {
             target.id = uuid::Uuid::new_v4().to_string();
             target.name = format!("{} (Copy)", target.name);
@@ -163,14 +165,17 @@ pub fn paste_exposure() -> Option<SimpleExposure> {
 /// Paste exposures from clipboard
 pub fn paste_exposures() -> Option<Vec<SimpleExposure>> {
     match get_clipboard_content()? {
-        ClipboardContent::Exposures(exposures) => {
-            Some(exposures.into_iter().map(|mut exp| {
-                exp.id = uuid::Uuid::new_v4().to_string();
-                exp.progress_count = 0;
-                exp.status = crate::models::SequenceEntityStatus::Created;
-                exp
-            }).collect())
-        }
+        ClipboardContent::Exposures(exposures) => Some(
+            exposures
+                .into_iter()
+                .map(|mut exp| {
+                    exp.id = uuid::Uuid::new_v4().to_string();
+                    exp.progress_count = 0;
+                    exp.status = crate::models::SequenceEntityStatus::Created;
+                    exp
+                })
+                .collect(),
+        ),
         ClipboardContent::Exposure(mut exposure) => {
             exposure.id = uuid::Uuid::new_v4().to_string();
             exposure.progress_count = 0;
@@ -215,11 +220,11 @@ mod tests {
     fn test_copy_paste_target() {
         let target = create_test_target();
         let original_id = target.id.clone();
-        
+
         copy_target(target);
         assert!(has_clipboard_content());
         assert!(has_clipboard_content_type("target"));
-        
+
         let pasted = paste_target().unwrap();
         assert_ne!(pasted.id, original_id);
         assert!(pasted.name.contains("Copy"));
@@ -229,10 +234,10 @@ mod tests {
     fn test_copy_paste_exposure() {
         let exposure = create_test_exposure();
         let original_id = exposure.id.clone();
-        
+
         copy_exposure(exposure);
         assert!(has_clipboard_content());
-        
+
         let pasted = paste_exposure().unwrap();
         assert_ne!(pasted.id, original_id);
         assert_eq!(pasted.progress_count, 0);
@@ -242,7 +247,7 @@ mod tests {
     fn test_clear_clipboard() {
         copy_target(create_test_target());
         assert!(has_clipboard_content());
-        
+
         clear_clipboard();
         assert!(!has_clipboard_content());
     }
@@ -250,13 +255,13 @@ mod tests {
     #[test]
     fn test_serialize_deserialize() {
         copy_target(create_test_target());
-        
+
         let json = serialize_clipboard_content().unwrap();
         clear_clipboard();
-        
+
         let content = deserialize_clipboard_content(&json).unwrap();
         copy_to_clipboard(content);
-        
+
         assert!(has_clipboard_content());
     }
 }

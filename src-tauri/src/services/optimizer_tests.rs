@@ -2,10 +2,10 @@
 
 #[cfg(test)]
 mod tests {
-    use super::super::sequence_optimizer::*;
     use super::super::astronomy::ObserverLocation;
-    use crate::models::{SimpleSequence, SimpleTarget, SimpleExposure, Coordinates};
-    use crate::models::common::{SequenceEntityStatus, SequenceMode, ImageType, BinningMode};
+    use super::super::sequence_optimizer::*;
+    use crate::models::common::{BinningMode, ImageType, SequenceEntityStatus, SequenceMode};
+    use crate::models::{Coordinates, SimpleExposure, SimpleSequence, SimpleTarget};
     use chrono::{NaiveDate, Utc};
 
     fn test_location() -> ObserverLocation {
@@ -30,8 +30,12 @@ mod tests {
 
     fn create_test_target(
         name: &str,
-        ra_h: i32, ra_m: i32, ra_s: f64,
-        dec_d: i32, dec_m: i32, dec_s: f64,
+        ra_h: i32,
+        ra_m: i32,
+        ra_s: f64,
+        dec_d: i32,
+        dec_m: i32,
+        dec_s: f64,
         neg_dec: bool,
     ) -> SimpleTarget {
         SimpleTarget {
@@ -93,9 +97,9 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::MaxAltitude);
-        
+
         assert!(result.success);
         assert_eq!(result.original_order.len(), 3);
         assert_eq!(result.optimized_order.len(), 3);
@@ -106,9 +110,9 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::TransitTime);
-        
+
         assert!(result.success);
     }
 
@@ -117,9 +121,10 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
-        let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::VisibilityStart);
-        
+
+        let result =
+            optimize_sequence(&seq, &location, date, OptimizationStrategy::VisibilityStart);
+
         assert!(result.success);
     }
 
@@ -128,9 +133,14 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
-        let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::VisibilityDuration);
-        
+
+        let result = optimize_sequence(
+            &seq,
+            &location,
+            date,
+            OptimizationStrategy::VisibilityDuration,
+        );
+
         assert!(result.success);
     }
 
@@ -139,9 +149,9 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::MinimizeSlew);
-        
+
         assert!(result.success);
     }
 
@@ -150,9 +160,9 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::Combined);
-        
+
         assert!(result.success);
         assert!(result.improvements.len() > 0);
     }
@@ -166,9 +176,9 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = detect_conflicts(&seq, &location, date);
-        
+
         // With short exposures, there should be no time conflicts
         assert!(result.conflicts.len() <= 3); // May have visibility warnings
     }
@@ -183,12 +193,12 @@ mod tests {
                 exp.total_count = 100;
             }
         }
-        
+
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = detect_conflicts(&seq, &location, date);
-        
+
         // Should detect insufficient time conflicts
         assert!(result.has_conflicts || result.suggestions.len() > 0);
     }
@@ -201,14 +211,14 @@ mod tests {
     fn test_calculate_etas_parallel() {
         let seq = create_test_sequence();
         let start = Utc::now();
-        
+
         let results = calculate_etas_parallel(&seq, start);
-        
+
         assert_eq!(results.len(), 3);
-        
+
         // Check that ETAs are sequential
         for i in 1..results.len() {
-            assert!(results[i].eta_start > results[i-1].eta_start);
+            assert!(results[i].eta_start > results[i - 1].eta_start);
         }
     }
 
@@ -216,9 +226,9 @@ mod tests {
     fn test_calculate_etas_runtime() {
         let seq = create_test_sequence();
         let start = Utc::now();
-        
+
         let results = calculate_etas_parallel(&seq, start);
-        
+
         // Each target has 10 exposures of 60s + 5s download = 650s
         for result in &results {
             assert!((result.runtime - 650.0).abs() < 1.0);
@@ -234,9 +244,9 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let results = calculate_visibility_parallel(&seq.targets, &location, date, 20.0);
-        
+
         assert_eq!(results.len(), 3);
     }
 
@@ -249,11 +259,11 @@ mod tests {
         let seq = create_test_sequence();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let info = get_schedule_info(&seq, &location, date);
-        
+
         assert_eq!(info.len(), 3);
-        
+
         for target_info in &info {
             assert!(!target_info.target_name.is_empty());
             assert!(target_info.quality_score >= 0.0);
@@ -268,12 +278,12 @@ mod tests {
     fn test_apply_optimized_order() {
         let mut seq = create_test_sequence();
         let original_ids: Vec<String> = seq.targets.iter().map(|t| t.id.clone()).collect();
-        
+
         // Reverse the order
         let reversed: Vec<String> = original_ids.iter().rev().cloned().collect();
-        
+
         apply_optimized_order(&mut seq, &reversed);
-        
+
         assert_eq!(seq.targets[0].id, original_ids[2]);
         assert_eq!(seq.targets[2].id, original_ids[0]);
     }
@@ -282,10 +292,10 @@ mod tests {
     fn test_apply_optimized_order_partial() {
         let mut seq = create_test_sequence();
         let first_id = seq.targets[0].id.clone();
-        
+
         // Only include first target
         apply_optimized_order(&mut seq, &[first_id.clone()]);
-        
+
         assert_eq!(seq.targets.len(), 1);
         assert_eq!(seq.targets[0].id, first_id);
     }
@@ -298,9 +308,9 @@ mod tests {
     fn test_merge_sequences() {
         let seq1 = create_test_sequence();
         let seq2 = create_test_sequence();
-        
+
         let merged = merge_sequences(&[seq1.clone(), seq2.clone()], Some("Merged".to_string()));
-        
+
         assert_eq!(merged.title, "Merged");
         assert_eq!(merged.targets.len(), 6);
     }
@@ -309,9 +319,9 @@ mod tests {
     fn test_merge_sequences_unique_ids() {
         let seq1 = create_test_sequence();
         let seq2 = create_test_sequence();
-        
+
         let merged = merge_sequences(&[seq1, seq2], None);
-        
+
         // All IDs should be unique
         let ids: Vec<&String> = merged.targets.iter().map(|t| &t.id).collect();
         let unique_ids: std::collections::HashSet<&String> = ids.iter().cloned().collect();
@@ -325,11 +335,11 @@ mod tests {
     #[test]
     fn test_split_sequence() {
         let seq = create_test_sequence();
-        
+
         let split = split_sequence(&seq);
-        
+
         assert_eq!(split.len(), 3);
-        
+
         for (i, s) in split.iter().enumerate() {
             assert_eq!(s.targets.len(), 1);
             assert_eq!(s.title, seq.targets[i].target_name);
@@ -341,9 +351,9 @@ mod tests {
         let mut seq = create_test_sequence();
         seq.start_options.cool_camera_temperature = -20.0;
         seq.estimated_download_time = 10.0;
-        
+
         let split = split_sequence(&seq);
-        
+
         for s in &split {
             assert_eq!(s.start_options.cool_camera_temperature, -20.0);
             assert_eq!(s.estimated_download_time, 10.0);
@@ -360,9 +370,9 @@ mod tests {
         seq.targets.clear();
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::Combined);
-        
+
         assert!(result.success);
         assert_eq!(result.optimized_order.len(), 0);
     }
@@ -373,9 +383,9 @@ mod tests {
         seq.targets = vec![seq.targets.remove(0)];
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let result = optimize_sequence(&seq, &location, date, OptimizationStrategy::Combined);
-        
+
         assert!(result.success);
         assert_eq!(result.optimized_order.len(), 1);
     }
@@ -383,7 +393,7 @@ mod tests {
     #[test]
     fn test_merge_empty_sequences() {
         let merged = merge_sequences(&[], Some("Empty".to_string()));
-        
+
         assert_eq!(merged.targets.len(), 0);
     }
 
@@ -391,9 +401,9 @@ mod tests {
     fn test_split_empty_sequence() {
         let mut seq = SimpleSequence::new("Empty".to_string());
         seq.targets.clear();
-        
+
         let split = split_sequence(&seq);
-        
+
         assert_eq!(split.len(), 0);
     }
 }

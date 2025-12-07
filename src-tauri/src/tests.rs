@@ -1,5 +1,5 @@
 // Test module for all service tests
-// 
+//
 // Run tests with: cargo test
 
 // Integration tests
@@ -12,16 +12,16 @@ mod integration_tests {
         let mut seq = SimpleSequence::default();
         seq.title = "Test Sequence".to_string();
         seq.estimated_download_time = 5.0;
-        
+
         let mut target = SimpleTarget::default();
         target.target_name = "M31 - Andromeda".to_string();
         target.coordinates = Coordinates::from_decimal(0.712, 41.27);
-        
+
         let mut exposure = SimpleExposure::default();
         exposure.exposure_time = 60.0;
         exposure.total_count = 10;
         target.exposures = vec![exposure];
-        
+
         seq.targets = vec![target];
         seq
     }
@@ -96,7 +96,7 @@ mod integration_tests {
     fn test_coordinates_validation() {
         let valid = Coordinates::from_decimal(12.0, 45.0);
         assert!(valid.validate().is_empty());
-        
+
         let mut invalid = Coordinates::default();
         invalid.ra_hours = 25; // Invalid
         assert!(!invalid.validate().is_empty());
@@ -109,7 +109,7 @@ mod integration_tests {
         let mut exp = SimpleExposure::default();
         exp.exposure_time = 60.0;
         exp.total_count = 10;
-        
+
         let runtime = calculator::calculate_exposure_runtime(&exp, 5.0);
         assert_eq!(runtime, 650.0); // (60 + 5) * 10
     }
@@ -121,7 +121,7 @@ mod integration_tests {
         exp.exposure_time = 30.0;
         exp.total_count = 5;
         target.exposures = vec![exp];
-        
+
         let runtime = calculator::calculate_target_runtime(&target, 5.0);
         assert_eq!(runtime, 175.0); // (30 + 5) * 5
     }
@@ -160,7 +160,7 @@ mod integration_tests {
         let coord2 = Coordinates::from_decimal(0.0, 0.0);
         let dist = calculator::angular_separation(&coord1, &coord2);
         assert!(dist < 0.001);
-        
+
         // Different points
         let coord3 = Coordinates::from_decimal(6.0, 0.0);
         let dist2 = calculator::angular_separation(&coord1, &coord3);
@@ -237,10 +237,10 @@ mod integration_tests {
     fn test_clipboard_copy_paste_target() {
         let target = create_test_target();
         clipboard_service::copy_target(target.clone());
-        
+
         assert!(clipboard_service::has_clipboard_content());
         assert!(clipboard_service::has_clipboard_content_type("target"));
-        
+
         let pasted = clipboard_service::paste_target().unwrap();
         assert_ne!(pasted.id, target.id);
         assert!(pasted.name.contains("Copy"));
@@ -250,9 +250,9 @@ mod integration_tests {
     fn test_clipboard_copy_paste_exposure() {
         let exp = create_test_exposure();
         clipboard_service::copy_exposure(exp.clone());
-        
+
         assert!(clipboard_service::has_clipboard_content());
-        
+
         let pasted = clipboard_service::paste_exposure().unwrap();
         assert_ne!(pasted.id, exp.id);
     }
@@ -261,7 +261,7 @@ mod integration_tests {
     fn test_clipboard_copy_multiple_targets() {
         let targets = vec![create_test_target(), create_test_target()];
         clipboard_service::copy_targets(targets);
-        
+
         let pasted = clipboard_service::paste_targets().unwrap();
         assert_eq!(pasted.len(), 2);
     }
@@ -281,7 +281,7 @@ mod integration_tests {
         log_service::log_debug("test", "Debug message");
         log_service::log_warning("test", "Warning message");
         log_service::log_error("test", "Error message");
-        
+
         let logs = log_service::get_recent_logs(10, None);
         assert!(!logs.is_empty());
     }
@@ -291,9 +291,11 @@ mod integration_tests {
         log_service::clear_log_buffer();
         log_service::log_info("test", "Info");
         log_service::log_error("test", "Error");
-        
+
         let errors = log_service::get_recent_logs(10, Some(log_service::LogLevel::Error));
-        assert!(errors.iter().all(|l| matches!(l.level, log_service::LogLevel::Error)));
+        assert!(errors
+            .iter()
+            .all(|l| matches!(l.level, log_service::LogLevel::Error)));
     }
 
     #[test]
@@ -301,7 +303,7 @@ mod integration_tests {
         log_service::clear_log_buffer();
         log_service::log_info("category1", "Message 1");
         log_service::log_info("category2", "Message 2");
-        
+
         let filtered = log_service::get_logs_by_category("category1", 10);
         assert!(filtered.iter().all(|l| l.category == "category1"));
     }
@@ -364,23 +366,21 @@ mod integration_tests {
             auto_focus_after_temperature_change_amount: 1.0,
             auto_focus_after_hfr_change: false,
             auto_focus_after_hfr_change_amount: 15.0,
-            exposures: vec![
-                SimpleExposure {
-                    id: "exp1".to_string(),
-                    enabled: true,
-                    status: SequenceEntityStatus::Created,
-                    exposure_time: 60.0,
-                    image_type: ImageType::Light,
-                    filter: None,
-                    binning: BinningMode { x: 1, y: 1 },
-                    gain: -1,
-                    offset: -1,
-                    total_count: 10,
-                    progress_count: 0,
-                    dither: false,
-                    dither_every: 1,
-                },
-            ],
+            exposures: vec![SimpleExposure {
+                id: "exp1".to_string(),
+                enabled: true,
+                status: SequenceEntityStatus::Created,
+                exposure_time: 60.0,
+                image_type: ImageType::Light,
+                filter: None,
+                binning: BinningMode { x: 1, y: 1 },
+                gain: -1,
+                offset: -1,
+                total_count: 10,
+                progress_count: 0,
+                dither: false,
+                dither_every: 1,
+            }],
             estimated_start_time: None,
             estimated_end_time: None,
             estimated_duration: None,
@@ -389,7 +389,11 @@ mod integration_tests {
 
         // Validate
         let validation = validator::validate_simple_sequence(&sequence);
-        assert!(validation.valid, "Sequence should be valid: {:?}", validation.errors);
+        assert!(
+            validation.valid,
+            "Sequence should be valid: {:?}",
+            validation.errors
+        );
 
         // Serialize to JSON
         let json = serializer::serialize_simple_sequence_json(&sequence).unwrap();
@@ -419,22 +423,21 @@ mod integration_tests {
         let sequence = EditorSequence {
             id: "editor-test".to_string(),
             title: "Editor Test".to_string(),
-            start_items: vec![
-                EditorSequenceItem {
-                    id: "start1".to_string(),
-                    item_type: "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer".to_string(),
-                    name: "Cool Camera".to_string(),
-                    category: "Camera".to_string(),
-                    icon: None,
-                    description: None,
-                    status: SequenceEntityStatus::Created,
-                    is_expanded: None,
-                    data: std::collections::HashMap::new(),
-                    items: None,
-                    conditions: None,
-                    triggers: None,
-                },
-            ],
+            start_items: vec![EditorSequenceItem {
+                id: "start1".to_string(),
+                item_type: "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"
+                    .to_string(),
+                name: "Cool Camera".to_string(),
+                category: "Camera".to_string(),
+                icon: None,
+                description: None,
+                status: SequenceEntityStatus::Created,
+                is_expanded: None,
+                data: std::collections::HashMap::new(),
+                items: None,
+                conditions: None,
+                triggers: None,
+            }],
             target_items: vec![],
             end_items: vec![],
             global_triggers: vec![],
@@ -537,10 +540,10 @@ mod integration_tests {
 
         // Export to CSV
         let csv = serializer::export_to_csv(&sequence).unwrap();
-        
+
         // Import from CSV
         let imported_targets = serializer::import_from_csv(&csv).unwrap();
-        
+
         assert_eq!(imported_targets.len(), 2);
         assert_eq!(imported_targets[0].target_name, "M31");
         assert_eq!(imported_targets[1].target_name, "M42");
@@ -574,7 +577,7 @@ mod integration_tests {
         let result = ValidationResult::ok();
         assert!(result.valid);
         assert!(result.errors.is_empty());
-        
+
         let result = ValidationResult::error("Test error".to_string());
         assert!(!result.valid);
         assert_eq!(result.errors.len(), 1);
@@ -649,10 +652,10 @@ mod integration_tests {
             end_items: vec![],
             global_triggers: vec![],
         };
-        
+
         let json = serializer::serialize_editor_sequence_json(&seq).unwrap();
         assert!(json.contains("Test"));
-        
+
         let deserialized = serializer::deserialize_editor_sequence_json(&json).unwrap();
         assert_eq!(deserialized.title, seq.title);
     }
@@ -661,7 +664,7 @@ mod integration_tests {
     fn test_export_to_xml_with_exposures() {
         let mut seq = create_test_sequence();
         seq.targets[0].exposures.push(create_test_exposure());
-        
+
         let xml = serializer::export_to_xml(&seq).unwrap();
         assert!(xml.contains("CaptureSequence"));
         assert!(xml.contains("ExposureTime"));
@@ -682,19 +685,18 @@ mod integration_tests {
             is_expanded: Some(true),
             data: std::collections::HashMap::new(),
             items: Some(vec![]),
-            conditions: Some(vec![
-                EditorCondition {
-                    id: "cond1".to_string(),
-                    condition_type: "NINA.Sequencer.Conditions.LoopCondition, NINA.Sequencer".to_string(),
-                    name: "Loop".to_string(),
-                    category: "Conditions".to_string(),
-                    icon: None,
-                    data: std::collections::HashMap::new(),
-                }
-            ]),
+            conditions: Some(vec![EditorCondition {
+                id: "cond1".to_string(),
+                condition_type: "NINA.Sequencer.Conditions.LoopCondition, NINA.Sequencer"
+                    .to_string(),
+                name: "Loop".to_string(),
+                category: "Conditions".to_string(),
+                icon: None,
+                data: std::collections::HashMap::new(),
+            }]),
             triggers: None,
         };
-        
+
         let seq = EditorSequence {
             id: "test".to_string(),
             title: "Test".to_string(),
@@ -703,7 +705,7 @@ mod integration_tests {
             end_items: vec![],
             global_triggers: vec![],
         };
-        
+
         let json = nina_serializer::export_to_nina(&seq).unwrap();
         assert!(json.contains("Conditions"));
     }
@@ -732,9 +734,15 @@ mod integration_tests {
 
     #[test]
     fn test_is_container_type() {
-        assert!(validator::is_container_type("NINA.Sequencer.Container.SequentialContainer, NINA.Sequencer"));
-        assert!(validator::is_container_type("NINA.Sequencer.SequenceItem.Imaging.SmartExposure, NINA.Sequencer"));
-        assert!(!validator::is_container_type("NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"));
+        assert!(validator::is_container_type(
+            "NINA.Sequencer.Container.SequentialContainer, NINA.Sequencer"
+        ));
+        assert!(validator::is_container_type(
+            "NINA.Sequencer.SequenceItem.Imaging.SmartExposure, NINA.Sequencer"
+        ));
+        assert!(!validator::is_container_type(
+            "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"
+        ));
     }
 
     // ==================== Edge Case Tests ====================

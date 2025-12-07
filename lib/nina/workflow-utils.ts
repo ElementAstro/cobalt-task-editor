@@ -1,23 +1,28 @@
 // Workflow utilities - Convert between sequence data and React Flow nodes/edges
 
-import type { Node, Edge } from '@xyflow/react';
-import type { EditorSequenceItem, EditorCondition, EditorTrigger, EditorSequence } from './types';
-import { isContainerType } from './constants';
-import dagre from 'dagre';
+import type { Node, Edge } from "@xyflow/react";
+import type {
+  EditorSequenceItem,
+  EditorCondition,
+  EditorTrigger,
+  EditorSequence,
+} from "./types";
+import { isContainerType } from "./constants";
+import dagre from "dagre";
 
 // Node types
-export type WorkflowNodeType = 
-  | 'sequenceItem' 
-  | 'container' 
-  | 'condition' 
-  | 'trigger'
-  | 'areaStart'
-  | 'areaEnd';
+export type WorkflowNodeType =
+  | "sequenceItem"
+  | "container"
+  | "condition"
+  | "trigger"
+  | "areaStart"
+  | "areaEnd";
 
 // Custom node data types - with index signatures for React Flow compatibility
 export interface SequenceItemNodeData {
   item: EditorSequenceItem;
-  area: 'start' | 'target' | 'end';
+  area: "start" | "target" | "end";
   parentId: string | null;
   index: number;
   depth: number;
@@ -42,7 +47,7 @@ export interface TriggerNodeData {
 }
 
 export interface AreaMarkerData {
-  area: 'start' | 'target' | 'end';
+  area: "start" | "target" | "end";
   label: string;
   [key: string]: unknown;
 }
@@ -63,8 +68,13 @@ export const LAYOUT_CONFIG = {
 };
 
 // Generate unique edge ID
-function edgeId(source: string, target: string, sourceHandle?: string, targetHandle?: string): string {
-  return `e-${source}-${target}${sourceHandle ? `-${sourceHandle}` : ''}${targetHandle ? `-${targetHandle}` : ''}`;
+function edgeId(
+  source: string,
+  target: string,
+  sourceHandle?: string,
+  targetHandle?: string,
+): string {
+  return `e-${source}-${target}${sourceHandle ? `-${sourceHandle}` : ""}${targetHandle ? `-${targetHandle}` : ""}`;
 }
 
 // Calculate node positions using a hierarchical layout
@@ -75,21 +85,22 @@ interface LayoutState {
 
 function layoutItems(
   items: EditorSequenceItem[],
-  area: 'start' | 'target' | 'end',
+  area: "start" | "target" | "end",
   parentId: string | null,
   depth: number,
   startX: number,
   layoutState: LayoutState,
   nodes: Node[],
   edges: Edge[],
-  prevNodeId: string | null
+  prevNodeId: string | null,
 ): string | null {
   let lastNodeId = prevNodeId;
 
   items.forEach((item, index) => {
     const isContainer = isContainerType(item.type);
     const nodeId = `node-${item.id}`;
-    const x = startX + depth * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.horizontalGap);
+    const x =
+      startX + depth * (LAYOUT_CONFIG.nodeWidth + LAYOUT_CONFIG.horizontalGap);
     const y = layoutState.currentY;
 
     // Create node
@@ -110,7 +121,7 @@ function layoutItems(
 
       nodes.push({
         id: nodeId,
-        type: 'container',
+        type: "container",
         position: { x, y },
         data: containerData,
         style: {
@@ -118,7 +129,8 @@ function layoutItems(
         },
       });
 
-      layoutState.currentY += LAYOUT_CONFIG.containerNodeHeight + LAYOUT_CONFIG.verticalGap;
+      layoutState.currentY +=
+        LAYOUT_CONFIG.containerNodeHeight + LAYOUT_CONFIG.verticalGap;
 
       // Add edge from previous node
       if (lastNodeId) {
@@ -126,9 +138,9 @@ function layoutItems(
           id: edgeId(lastNodeId, nodeId),
           source: lastNodeId,
           target: nodeId,
-          type: 'bezier',
+          type: "bezier",
           animated: false,
-          style: { stroke: '#64748b', strokeWidth: 2 },
+          style: { stroke: "#64748b", strokeWidth: 2 },
         });
       }
 
@@ -141,18 +153,22 @@ function layoutItems(
 
           nodes.push({
             id: condNodeId,
-            type: 'condition',
+            type: "condition",
             position: { x: condX, y: condY },
             data: { condition, containerId: item.id } as ConditionNodeData,
           });
 
           edges.push({
-            id: edgeId(nodeId, condNodeId, 'condition'),
+            id: edgeId(nodeId, condNodeId, "condition"),
             source: nodeId,
-            sourceHandle: 'condition',
+            sourceHandle: "condition",
             target: condNodeId,
-            type: 'smoothstep',
-            style: { stroke: '#eab308', strokeWidth: 1.5, strokeDasharray: '5,5' },
+            type: "smoothstep",
+            style: {
+              stroke: "#eab308",
+              strokeWidth: 1.5,
+              strokeDasharray: "5,5",
+            },
           });
 
           layoutState.maxX = Math.max(layoutState.maxX, condX + 150);
@@ -164,23 +180,30 @@ function layoutItems(
         item.triggers.forEach((trigger, trigIndex) => {
           const trigNodeId = `trig-${trigger.id}`;
           const trigX = x + LAYOUT_CONFIG.nodeWidth + 40;
-          const condOffset = (item.conditions?.length ?? 0) * (LAYOUT_CONFIG.conditionNodeHeight + 8);
-          const trigY = y + condOffset + trigIndex * (LAYOUT_CONFIG.triggerNodeHeight + 8);
+          const condOffset =
+            (item.conditions?.length ?? 0) *
+            (LAYOUT_CONFIG.conditionNodeHeight + 8);
+          const trigY =
+            y + condOffset + trigIndex * (LAYOUT_CONFIG.triggerNodeHeight + 8);
 
           nodes.push({
             id: trigNodeId,
-            type: 'trigger',
+            type: "trigger",
             position: { x: trigX, y: trigY },
             data: { trigger, containerId: item.id } as TriggerNodeData,
           });
 
           edges.push({
-            id: edgeId(nodeId, trigNodeId, 'trigger'),
+            id: edgeId(nodeId, trigNodeId, "trigger"),
             source: nodeId,
-            sourceHandle: 'trigger',
+            sourceHandle: "trigger",
             target: trigNodeId,
-            type: 'smoothstep',
-            style: { stroke: '#a855f7', strokeWidth: 1.5, strokeDasharray: '5,5' },
+            type: "smoothstep",
+            style: {
+              stroke: "#a855f7",
+              strokeWidth: 1.5,
+              strokeDasharray: "5,5",
+            },
           });
 
           layoutState.maxX = Math.max(layoutState.maxX, trigX + 150);
@@ -198,7 +221,7 @@ function layoutItems(
           layoutState,
           nodes,
           edges,
-          nodeId
+          nodeId,
         );
       }
 
@@ -207,7 +230,7 @@ function layoutItems(
       // Regular sequence item
       nodes.push({
         id: nodeId,
-        type: 'sequenceItem',
+        type: "sequenceItem",
         position: { x, y },
         data: nodeData,
         style: {
@@ -215,8 +238,12 @@ function layoutItems(
         },
       });
 
-      layoutState.currentY += LAYOUT_CONFIG.nodeHeight + LAYOUT_CONFIG.verticalGap;
-      layoutState.maxX = Math.max(layoutState.maxX, x + LAYOUT_CONFIG.nodeWidth);
+      layoutState.currentY +=
+        LAYOUT_CONFIG.nodeHeight + LAYOUT_CONFIG.verticalGap;
+      layoutState.maxX = Math.max(
+        layoutState.maxX,
+        x + LAYOUT_CONFIG.nodeWidth,
+      );
 
       // Add edge from previous node
       if (lastNodeId) {
@@ -224,9 +251,9 @@ function layoutItems(
           id: edgeId(lastNodeId, nodeId),
           source: lastNodeId,
           target: nodeId,
-          type: 'bezier',
+          type: "bezier",
           animated: false,
-          style: { stroke: '#64748b', strokeWidth: 2 },
+          style: { stroke: "#64748b", strokeWidth: 2 },
         });
       }
 
@@ -238,7 +265,10 @@ function layoutItems(
 }
 
 // Convert sequence to React Flow nodes and edges
-export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges: Edge[] } {
+export function sequenceToFlow(sequence: EditorSequence): {
+  nodes: Node[];
+  edges: Edge[];
+} {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   const layoutState: LayoutState = {
@@ -247,10 +277,14 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
   };
 
   // Create area start markers and layout items for each area
-  const areas: Array<{ key: 'start' | 'target' | 'end'; items: EditorSequenceItem[]; label: string }> = [
-    { key: 'start', items: sequence.startItems, label: 'Start' },
-    { key: 'target', items: sequence.targetItems, label: 'Target' },
-    { key: 'end', items: sequence.endItems, label: 'End' },
+  const areas: Array<{
+    key: "start" | "target" | "end";
+    items: EditorSequenceItem[];
+    label: string;
+  }> = [
+    { key: "start", items: sequence.startItems, label: "Start" },
+    { key: "target", items: sequence.targetItems, label: "Target" },
+    { key: "end", items: sequence.endItems, label: "End" },
   ];
 
   let prevAreaEndNodeId: string | null = null;
@@ -260,7 +294,7 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
     const areaStartId = `area-start-${key}`;
     nodes.push({
       id: areaStartId,
-      type: 'areaStart',
+      type: "areaStart",
       position: { x: LAYOUT_CONFIG.startX, y: layoutState.currentY },
       data: { area: key, label } as AreaMarkerData,
       draggable: false,
@@ -272,9 +306,9 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
         id: edgeId(prevAreaEndNodeId, areaStartId),
         source: prevAreaEndNodeId,
         target: areaStartId,
-        type: 'bezier',
+        type: "bezier",
         animated: true,
-        style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '10,5' },
+        style: { stroke: "#3b82f6", strokeWidth: 2, strokeDasharray: "10,5" },
       });
     }
 
@@ -290,14 +324,14 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
       layoutState,
       nodes,
       edges,
-      areaStartId
+      areaStartId,
     );
 
     // Area end marker
     const areaEndId = `area-end-${key}`;
     nodes.push({
       id: areaEndId,
-      type: 'areaEnd',
+      type: "areaEnd",
       position: { x: LAYOUT_CONFIG.startX, y: layoutState.currentY },
       data: { area: key, label: `${label} End` } as AreaMarkerData,
       draggable: false,
@@ -308,8 +342,8 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
         id: edgeId(lastItemNodeId, areaEndId),
         source: lastItemNodeId,
         target: areaEndId,
-        type: 'straight',
-        style: { stroke: '#64748b', strokeWidth: 2 },
+        type: "straight",
+        style: { stroke: "#64748b", strokeWidth: 2 },
       });
     } else {
       // Empty area - connect start to end
@@ -317,8 +351,8 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
         id: edgeId(areaStartId, areaEndId),
         source: areaStartId,
         target: areaEndId,
-        type: 'straight',
-        style: { stroke: '#64748b', strokeWidth: 2, strokeDasharray: '5,5' },
+        type: "straight",
+        style: { stroke: "#64748b", strokeWidth: 2, strokeDasharray: "5,5" },
       });
     }
 
@@ -333,10 +367,12 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
       const trigNodeId = `global-trig-${trigger.id}`;
       nodes.push({
         id: trigNodeId,
-        type: 'trigger',
-        position: { 
-          x: globalTriggerX, 
-          y: LAYOUT_CONFIG.startY + index * (LAYOUT_CONFIG.triggerNodeHeight + 15) 
+        type: "trigger",
+        position: {
+          x: globalTriggerX,
+          y:
+            LAYOUT_CONFIG.startY +
+            index * (LAYOUT_CONFIG.triggerNodeHeight + 15),
         },
         data: { trigger, containerId: null } as TriggerNodeData,
       });
@@ -347,57 +383,59 @@ export function sequenceToFlow(sequence: EditorSequence): { nodes: Node[]; edges
 }
 
 // Find item info from node ID
-export function parseNodeId(nodeId: string): { type: 'item' | 'condition' | 'trigger' | 'area'; id: string } | null {
-  if (nodeId.startsWith('node-')) {
-    return { type: 'item', id: nodeId.replace('node-', '') };
+export function parseNodeId(
+  nodeId: string,
+): { type: "item" | "condition" | "trigger" | "area"; id: string } | null {
+  if (nodeId.startsWith("node-")) {
+    return { type: "item", id: nodeId.replace("node-", "") };
   }
-  if (nodeId.startsWith('cond-')) {
-    return { type: 'condition', id: nodeId.replace('cond-', '') };
+  if (nodeId.startsWith("cond-")) {
+    return { type: "condition", id: nodeId.replace("cond-", "") };
   }
-  if (nodeId.startsWith('trig-') || nodeId.startsWith('global-trig-')) {
-    const id = nodeId.replace('global-trig-', '').replace('trig-', '');
-    return { type: 'trigger', id };
+  if (nodeId.startsWith("trig-") || nodeId.startsWith("global-trig-")) {
+    const id = nodeId.replace("global-trig-", "").replace("trig-", "");
+    return { type: "trigger", id };
   }
-  if (nodeId.startsWith('area-')) {
-    return { type: 'area', id: nodeId };
+  if (nodeId.startsWith("area-")) {
+    return { type: "area", id: nodeId };
   }
   return null;
 }
 
 // Get area color
-export function getAreaColor(area: 'start' | 'target' | 'end'): string {
+export function getAreaColor(area: "start" | "target" | "end"): string {
   switch (area) {
-    case 'start':
-      return '#22c55e'; // green
-    case 'target':
-      return '#3b82f6'; // blue
-    case 'end':
-      return '#f97316'; // orange
+    case "start":
+      return "#22c55e"; // green
+    case "target":
+      return "#3b82f6"; // blue
+    case "end":
+      return "#f97316"; // orange
     default:
-      return '#64748b';
+      return "#64748b";
   }
 }
 
 // Get item type color based on type string
 export function getItemTypeColor(type: string): string {
-  if (type.includes('DeepSkyObject')) return '#eab308'; // yellow
-  if (type.includes('Sequential')) return '#3b82f6'; // blue
-  if (type.includes('Parallel')) return '#a855f7'; // purple
-  if (type.includes('Cool') || type.includes('Warm')) return '#f97316'; // orange
-  if (type.includes('Exposure')) return '#22c55e'; // green
-  if (type.includes('Slew') || type.includes('Park')) return '#06b6d4'; // cyan
-  if (type.includes('Focuser') || type.includes('Autofocus')) return '#6366f1'; // indigo
-  if (type.includes('Filter')) return '#ec4899'; // pink
-  if (type.includes('Guider') || type.includes('Dither')) return '#ef4444'; // red
-  if (type.includes('Rotator')) return '#14b8a6'; // teal
-  if (type.includes('Dome')) return '#f59e0b'; // amber
-  if (type.includes('Wait')) return '#f97316'; // orange
-  return '#64748b'; // slate
+  if (type.includes("DeepSkyObject")) return "#eab308"; // yellow
+  if (type.includes("Sequential")) return "#3b82f6"; // blue
+  if (type.includes("Parallel")) return "#a855f7"; // purple
+  if (type.includes("Cool") || type.includes("Warm")) return "#f97316"; // orange
+  if (type.includes("Exposure")) return "#22c55e"; // green
+  if (type.includes("Slew") || type.includes("Park")) return "#06b6d4"; // cyan
+  if (type.includes("Focuser") || type.includes("Autofocus")) return "#6366f1"; // indigo
+  if (type.includes("Filter")) return "#ec4899"; // pink
+  if (type.includes("Guider") || type.includes("Dither")) return "#ef4444"; // red
+  if (type.includes("Rotator")) return "#14b8a6"; // teal
+  if (type.includes("Dome")) return "#f59e0b"; // amber
+  if (type.includes("Wait")) return "#f97316"; // orange
+  return "#64748b"; // slate
 }
 
 // Auto-layout nodes using dagre algorithm
 export interface AutoLayoutOptions {
-  direction?: 'TB' | 'LR' | 'BT' | 'RL';
+  direction?: "TB" | "LR" | "BT" | "RL";
   nodeSpacing?: number;
   rankSpacing?: number;
   edgeSpacing?: number;
@@ -408,10 +446,10 @@ export interface AutoLayoutOptions {
 export function autoLayoutNodes(
   nodes: Node[],
   edges: Edge[],
-  options: AutoLayoutOptions = {}
+  options: AutoLayoutOptions = {},
 ): Node[] {
   const {
-    direction = 'TB',
+    direction = "TB",
     nodeSpacing = 60,
     rankSpacing = 100,
     edgeSpacing = 20,
@@ -421,31 +459,37 @@ export function autoLayoutNodes(
 
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ 
-    rankdir: direction, 
+  dagreGraph.setGraph({
+    rankdir: direction,
     nodesep: nodeSpacing,
     ranksep: rankSpacing,
     edgesep: edgeSpacing,
     marginx: marginX,
     marginy: marginY,
-    acyclicer: 'greedy',
-    ranker: 'network-simplex',
+    acyclicer: "greedy",
+    ranker: "network-simplex",
   });
 
   // Get node dimensions based on type
   const getNodeDimensions = (node: Node) => {
     switch (node.type) {
-      case 'condition':
+      case "condition":
         return { width: 140, height: LAYOUT_CONFIG.conditionNodeHeight };
-      case 'trigger':
+      case "trigger":
         return { width: 140, height: LAYOUT_CONFIG.triggerNodeHeight };
-      case 'container':
-        return { width: LAYOUT_CONFIG.nodeWidth, height: LAYOUT_CONFIG.containerNodeHeight };
-      case 'areaStart':
-      case 'areaEnd':
+      case "container":
+        return {
+          width: LAYOUT_CONFIG.nodeWidth,
+          height: LAYOUT_CONFIG.containerNodeHeight,
+        };
+      case "areaStart":
+      case "areaEnd":
         return { width: 180, height: 40 };
       default:
-        return { width: LAYOUT_CONFIG.nodeWidth, height: LAYOUT_CONFIG.nodeHeight };
+        return {
+          width: LAYOUT_CONFIG.nodeWidth,
+          height: LAYOUT_CONFIG.nodeHeight,
+        };
     }
   };
 
@@ -467,7 +511,7 @@ export function autoLayoutNodes(
   return nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     const { width, height } = getNodeDimensions(node);
-    
+
     return {
       ...node,
       position: {
@@ -479,12 +523,9 @@ export function autoLayoutNodes(
 }
 
 // Compact layout - groups related nodes closer together
-export function compactLayout(
-  nodes: Node[],
-  edges: Edge[]
-): Node[] {
+export function compactLayout(nodes: Node[], edges: Edge[]): Node[] {
   return autoLayoutNodes(nodes, edges, {
-    direction: 'TB',
+    direction: "TB",
     nodeSpacing: 40,
     rankSpacing: 70,
     edgeSpacing: 15,
@@ -494,12 +535,9 @@ export function compactLayout(
 }
 
 // Spread layout - gives more space between nodes
-export function spreadLayout(
-  nodes: Node[],
-  edges: Edge[]
-): Node[] {
+export function spreadLayout(nodes: Node[], edges: Edge[]): Node[] {
   return autoLayoutNodes(nodes, edges, {
-    direction: 'TB',
+    direction: "TB",
     nodeSpacing: 80,
     rankSpacing: 120,
     edgeSpacing: 30,
@@ -509,12 +547,9 @@ export function spreadLayout(
 }
 
 // Horizontal layout
-export function horizontalLayout(
-  nodes: Node[],
-  edges: Edge[]
-): Node[] {
+export function horizontalLayout(nodes: Node[], edges: Edge[]): Node[] {
   return autoLayoutNodes(nodes, edges, {
-    direction: 'LR',
+    direction: "LR",
     nodeSpacing: 50,
     rankSpacing: 100,
     edgeSpacing: 20,
@@ -524,7 +559,10 @@ export function horizontalLayout(
 }
 
 // Snap position to grid
-export function snapToGrid(position: { x: number; y: number }, gridSize: number): { x: number; y: number } {
+export function snapToGrid(
+  position: { x: number; y: number },
+  gridSize: number,
+): { x: number; y: number } {
   return {
     x: Math.round(position.x / gridSize) * gridSize,
     y: Math.round(position.y / gridSize) * gridSize,
@@ -532,96 +570,119 @@ export function snapToGrid(position: { x: number; y: number }, gridSize: number)
 }
 
 // Align selected nodes
-export type AlignmentType = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
+export type AlignmentType =
+  | "left"
+  | "center"
+  | "right"
+  | "top"
+  | "middle"
+  | "bottom";
 
-export function alignNodes(nodes: Node[], selectedIds: string[], alignment: AlignmentType): Node[] {
-  const selectedNodes = nodes.filter(n => selectedIds.includes(n.id));
+export function alignNodes(
+  nodes: Node[],
+  selectedIds: string[],
+  alignment: AlignmentType,
+): Node[] {
+  const selectedNodes = nodes.filter((n) => selectedIds.includes(n.id));
   if (selectedNodes.length < 2) return nodes;
 
   let targetValue: number;
-  
+
   switch (alignment) {
-    case 'left':
-      targetValue = Math.min(...selectedNodes.map(n => n.position.x));
+    case "left":
+      targetValue = Math.min(...selectedNodes.map((n) => n.position.x));
       break;
-    case 'center':
-      const minX = Math.min(...selectedNodes.map(n => n.position.x));
-      const maxX = Math.max(...selectedNodes.map(n => n.position.x + (LAYOUT_CONFIG.nodeWidth)));
+    case "center":
+      const minX = Math.min(...selectedNodes.map((n) => n.position.x));
+      const maxX = Math.max(
+        ...selectedNodes.map((n) => n.position.x + LAYOUT_CONFIG.nodeWidth),
+      );
       targetValue = (minX + maxX) / 2;
       break;
-    case 'right':
-      targetValue = Math.max(...selectedNodes.map(n => n.position.x + LAYOUT_CONFIG.nodeWidth));
+    case "right":
+      targetValue = Math.max(
+        ...selectedNodes.map((n) => n.position.x + LAYOUT_CONFIG.nodeWidth),
+      );
       break;
-    case 'top':
-      targetValue = Math.min(...selectedNodes.map(n => n.position.y));
+    case "top":
+      targetValue = Math.min(...selectedNodes.map((n) => n.position.y));
       break;
-    case 'middle':
-      const minY = Math.min(...selectedNodes.map(n => n.position.y));
-      const maxY = Math.max(...selectedNodes.map(n => n.position.y + LAYOUT_CONFIG.nodeHeight));
+    case "middle":
+      const minY = Math.min(...selectedNodes.map((n) => n.position.y));
+      const maxY = Math.max(
+        ...selectedNodes.map((n) => n.position.y + LAYOUT_CONFIG.nodeHeight),
+      );
       targetValue = (minY + maxY) / 2;
       break;
-    case 'bottom':
-      targetValue = Math.max(...selectedNodes.map(n => n.position.y + LAYOUT_CONFIG.nodeHeight));
+    case "bottom":
+      targetValue = Math.max(
+        ...selectedNodes.map((n) => n.position.y + LAYOUT_CONFIG.nodeHeight),
+      );
       break;
   }
 
-  return nodes.map(node => {
+  return nodes.map((node) => {
     if (!selectedIds.includes(node.id)) return node;
-    
+
     const newPosition = { ...node.position };
-    
+
     switch (alignment) {
-      case 'left':
+      case "left":
         newPosition.x = targetValue;
         break;
-      case 'center':
+      case "center":
         newPosition.x = targetValue - LAYOUT_CONFIG.nodeWidth / 2;
         break;
-      case 'right':
+      case "right":
         newPosition.x = targetValue - LAYOUT_CONFIG.nodeWidth;
         break;
-      case 'top':
+      case "top":
         newPosition.y = targetValue;
         break;
-      case 'middle':
+      case "middle":
         newPosition.y = targetValue - LAYOUT_CONFIG.nodeHeight / 2;
         break;
-      case 'bottom':
+      case "bottom":
         newPosition.y = targetValue - LAYOUT_CONFIG.nodeHeight;
         break;
     }
-    
+
     return { ...node, position: newPosition };
   });
 }
 
 // Distribute nodes evenly
-export type DistributeType = 'horizontal' | 'vertical';
+export type DistributeType = "horizontal" | "vertical";
 
-export function distributeNodes(nodes: Node[], selectedIds: string[], direction: DistributeType): Node[] {
-  const selectedNodes = nodes.filter(n => selectedIds.includes(n.id));
+export function distributeNodes(
+  nodes: Node[],
+  selectedIds: string[],
+  direction: DistributeType,
+): Node[] {
+  const selectedNodes = nodes.filter((n) => selectedIds.includes(n.id));
   if (selectedNodes.length < 3) return nodes;
 
-  const sortedNodes = [...selectedNodes].sort((a, b) => 
-    direction === 'horizontal' 
-      ? a.position.x - b.position.x 
-      : a.position.y - b.position.y
+  const sortedNodes = [...selectedNodes].sort((a, b) =>
+    direction === "horizontal"
+      ? a.position.x - b.position.x
+      : a.position.y - b.position.y,
   );
 
   const first = sortedNodes[0];
   const last = sortedNodes[sortedNodes.length - 1];
-  
-  const totalSpace = direction === 'horizontal'
-    ? last.position.x - first.position.x
-    : last.position.y - first.position.y;
-  
+
+  const totalSpace =
+    direction === "horizontal"
+      ? last.position.x - first.position.x
+      : last.position.y - first.position.y;
+
   const spacing = totalSpace / (sortedNodes.length - 1);
 
   const newPositions = new Map<string, { x: number; y: number }>();
-  
+
   sortedNodes.forEach((node, index) => {
     const newPos = { ...node.position };
-    if (direction === 'horizontal') {
+    if (direction === "horizontal") {
       newPos.x = first.position.x + spacing * index;
     } else {
       newPos.y = first.position.y + spacing * index;
@@ -629,7 +690,7 @@ export function distributeNodes(nodes: Node[], selectedIds: string[], direction:
     newPositions.set(node.id, newPos);
   });
 
-  return nodes.map(node => {
+  return nodes.map((node) => {
     const newPos = newPositions.get(node.id);
     if (newPos) {
       return { ...node, position: newPos };
@@ -639,21 +700,28 @@ export function distributeNodes(nodes: Node[], selectedIds: string[], direction:
 }
 
 // Get bounding box of selected nodes
-export function getSelectionBounds(nodes: Node[], selectedIds: string[]): { 
-  minX: number; 
-  minY: number; 
-  maxX: number; 
+export function getSelectionBounds(
+  nodes: Node[],
+  selectedIds: string[],
+): {
+  minX: number;
+  minY: number;
+  maxX: number;
   maxY: number;
   width: number;
   height: number;
 } | null {
-  const selectedNodes = nodes.filter(n => selectedIds.includes(n.id));
+  const selectedNodes = nodes.filter((n) => selectedIds.includes(n.id));
   if (selectedNodes.length === 0) return null;
 
-  const minX = Math.min(...selectedNodes.map(n => n.position.x));
-  const minY = Math.min(...selectedNodes.map(n => n.position.y));
-  const maxX = Math.max(...selectedNodes.map(n => n.position.x + LAYOUT_CONFIG.nodeWidth));
-  const maxY = Math.max(...selectedNodes.map(n => n.position.y + LAYOUT_CONFIG.nodeHeight));
+  const minX = Math.min(...selectedNodes.map((n) => n.position.x));
+  const minY = Math.min(...selectedNodes.map((n) => n.position.y));
+  const maxX = Math.max(
+    ...selectedNodes.map((n) => n.position.x + LAYOUT_CONFIG.nodeWidth),
+  );
+  const maxY = Math.max(
+    ...selectedNodes.map((n) => n.position.y + LAYOUT_CONFIG.nodeHeight),
+  );
 
   return {
     minX,
@@ -669,27 +737,25 @@ export function getSelectionBounds(nodes: Node[], selectedIds: string[]): {
 export function smartLayout(
   nodes: Node[],
   edges: Edge[],
-  options: AutoLayoutOptions = {}
+  options: AutoLayoutOptions = {},
 ): Node[] {
-  const {
-    direction = 'TB',
-    nodeSpacing = 60,
-    rankSpacing = 100,
-  } = options;
+  const { direction = "TB", nodeSpacing = 60, rankSpacing = 100 } = options;
 
   // Separate area markers from regular nodes
-  const areaStartNodes = nodes.filter(n => n.type === 'areaStart');
-  const areaEndNodes = nodes.filter(n => n.type === 'areaEnd');
-  const contentNodes = nodes.filter(n => n.type !== 'areaStart' && n.type !== 'areaEnd');
-  
+  const areaStartNodes = nodes.filter((n) => n.type === "areaStart");
+  const areaEndNodes = nodes.filter((n) => n.type === "areaEnd");
+  const contentNodes = nodes.filter(
+    (n) => n.type !== "areaStart" && n.type !== "areaEnd",
+  );
+
   // Group content nodes by area
   const nodesByArea: Record<string, Node[]> = {
     start: [],
     target: [],
     end: [],
   };
-  
-  contentNodes.forEach(node => {
+
+  contentNodes.forEach((node) => {
     const area = (node.data as { area?: string })?.area;
     if (area && nodesByArea[area]) {
       nodesByArea[area].push(node);
@@ -700,14 +766,14 @@ export function smartLayout(
   const layoutedNodes: Node[] = [];
   let currentY = 50;
   const centerX = 300;
-  
-  const areas: ('start' | 'target' | 'end')[] = ['start', 'target', 'end'];
-  
-  areas.forEach(area => {
+
+  const areas: ("start" | "target" | "end")[] = ["start", "target", "end"];
+
+  areas.forEach((area) => {
     const areaNodes = nodesByArea[area];
-    const areaStart = areaStartNodes.find(n => n.id === `area-start-${area}`);
-    const areaEnd = areaEndNodes.find(n => n.id === `area-end-${area}`);
-    
+    const areaStart = areaStartNodes.find((n) => n.id === `area-start-${area}`);
+    const areaEnd = areaEndNodes.find((n) => n.id === `area-end-${area}`);
+
     // Position area start marker
     if (areaStart) {
       layoutedNodes.push({
@@ -716,57 +782,73 @@ export function smartLayout(
       });
       currentY += 60;
     }
-    
+
     // Layout content nodes for this area
     if (areaNodes.length > 0) {
       // Filter edges that belong to this area's nodes
-      const areaNodeIds = new Set(areaNodes.map(n => n.id));
-      const areaEdges = edges.filter(e => 
-        areaNodeIds.has(e.source) || areaNodeIds.has(e.target)
+      const areaNodeIds = new Set(areaNodes.map((n) => n.id));
+      const areaEdges = edges.filter(
+        (e) => areaNodeIds.has(e.source) || areaNodeIds.has(e.target),
       );
-      
+
       // Use dagre for area content
       const dagreGraph = new dagre.graphlib.Graph();
       dagreGraph.setDefaultEdgeLabel(() => ({}));
-      dagreGraph.setGraph({ 
-        rankdir: direction, 
+      dagreGraph.setGraph({
+        rankdir: direction,
         nodesep: nodeSpacing,
         ranksep: rankSpacing,
       });
-      
-      areaNodes.forEach(node => {
-        const width = node.type === 'condition' || node.type === 'trigger' ? 140 : LAYOUT_CONFIG.nodeWidth;
-        const height = node.type === 'container' ? LAYOUT_CONFIG.containerNodeHeight : LAYOUT_CONFIG.nodeHeight;
+
+      areaNodes.forEach((node) => {
+        const width =
+          node.type === "condition" || node.type === "trigger"
+            ? 140
+            : LAYOUT_CONFIG.nodeWidth;
+        const height =
+          node.type === "container"
+            ? LAYOUT_CONFIG.containerNodeHeight
+            : LAYOUT_CONFIG.nodeHeight;
         dagreGraph.setNode(node.id, { width, height });
       });
-      
-      areaEdges.forEach(edge => {
-        if (dagreGraph.hasNode(edge.source) && dagreGraph.hasNode(edge.target)) {
+
+      areaEdges.forEach((edge) => {
+        if (
+          dagreGraph.hasNode(edge.source) &&
+          dagreGraph.hasNode(edge.target)
+        ) {
           dagreGraph.setEdge(edge.source, edge.target);
         }
       });
-      
+
       dagre.layout(dagreGraph);
-      
+
       // Find bounds and center offset
-      let minX = Infinity, maxX = -Infinity;
-      areaNodes.forEach(node => {
+      let minX = Infinity,
+        maxX = -Infinity;
+      areaNodes.forEach((node) => {
         const pos = dagreGraph.node(node.id);
         if (pos) {
           minX = Math.min(minX, pos.x);
           maxX = Math.max(maxX, pos.x);
         }
       });
-      
+
       const areaWidth = maxX - minX;
       const offsetX = centerX - (minX + areaWidth / 2);
-      
-      areaNodes.forEach(node => {
+
+      areaNodes.forEach((node) => {
         const pos = dagreGraph.node(node.id);
         if (pos) {
-          const width = node.type === 'condition' || node.type === 'trigger' ? 140 : LAYOUT_CONFIG.nodeWidth;
-          const height = node.type === 'container' ? LAYOUT_CONFIG.containerNodeHeight : LAYOUT_CONFIG.nodeHeight;
-          
+          const width =
+            node.type === "condition" || node.type === "trigger"
+              ? 140
+              : LAYOUT_CONFIG.nodeWidth;
+          const height =
+            node.type === "container"
+              ? LAYOUT_CONFIG.containerNodeHeight
+              : LAYOUT_CONFIG.nodeHeight;
+
           layoutedNodes.push({
             ...node,
             position: {
@@ -776,17 +858,19 @@ export function smartLayout(
           });
         }
       });
-      
+
       // Update currentY based on layouted nodes
-      const maxNodeY = Math.max(...areaNodes.map(n => {
-        const pos = dagreGraph.node(n.id);
-        return pos ? pos.y : 0;
-      }));
+      const maxNodeY = Math.max(
+        ...areaNodes.map((n) => {
+          const pos = dagreGraph.node(n.id);
+          return pos ? pos.y : 0;
+        }),
+      );
       currentY += maxNodeY + 80;
     } else {
       currentY += 40; // Empty area gap
     }
-    
+
     // Position area end marker
     if (areaEnd) {
       layoutedNodes.push({
@@ -796,6 +880,6 @@ export function smartLayout(
       currentY += 100; // Gap between areas
     }
   });
-  
+
   return layoutedNodes;
 }

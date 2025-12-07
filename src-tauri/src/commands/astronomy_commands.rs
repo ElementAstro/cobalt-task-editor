@@ -7,11 +7,11 @@ use tauri::command;
 
 use crate::models::Coordinates;
 use crate::services::astronomy::{
-    ObserverLocation, VisibilityWindow, TwilightTimes, MoonPhaseInfo,
-    ObservationQuality, BatchCoordinateResult, CelestialPosition,
-    calculate_visibility_window, calculate_twilight, calculate_observation_quality,
-    get_moon_phase_info, find_optimal_observation_time, batch_calculate_positions,
-    sun_position, moon_position, datetime_to_jd, ra_dec_to_alt_az, moon_illumination,
+    batch_calculate_positions, calculate_observation_quality, calculate_twilight,
+    calculate_visibility_window, datetime_to_jd, find_optimal_observation_time,
+    get_moon_phase_info, moon_illumination, moon_position, ra_dec_to_alt_az, sun_position,
+    BatchCoordinateResult, CelestialPosition, MoonPhaseInfo, ObservationQuality, ObserverLocation,
+    TwilightTimes, VisibilityWindow,
 };
 
 /// Calculate visibility window for a target
@@ -24,8 +24,13 @@ pub async fn calculate_target_visibility(
 ) -> Result<VisibilityWindow, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
-    Ok(calculate_visibility_window(&coordinates, &location, date, min_altitude))
+
+    Ok(calculate_visibility_window(
+        &coordinates,
+        &location,
+        date,
+        min_altitude,
+    ))
 }
 
 /// Calculate twilight times for a location and date
@@ -36,22 +41,20 @@ pub async fn calculate_twilight_times(
 ) -> Result<TwilightTimes, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     Ok(calculate_twilight(&location, date))
 }
 
 /// Get Moon phase information
 #[command]
-pub async fn get_moon_phase(
-    datetime: Option<String>,
-) -> Result<MoonPhaseInfo, String> {
+pub async fn get_moon_phase(datetime: Option<String>) -> Result<MoonPhaseInfo, String> {
     let dt = match datetime {
         Some(s) => DateTime::parse_from_rfc3339(&s)
             .map_err(|e| format!("Invalid datetime format: {}", e))?
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
+
     Ok(get_moon_phase_info(dt))
 }
 
@@ -68,7 +71,7 @@ pub async fn calculate_quality_score(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
+
     Ok(calculate_observation_quality(&coordinates, &location, dt))
 }
 
@@ -82,7 +85,7 @@ pub async fn find_optimal_time(
 ) -> Result<Option<String>, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     let result = find_optimal_observation_time(&coordinates, &location, date, min_altitude);
     Ok(result.map(|dt| dt.to_rfc3339()))
 }
@@ -101,8 +104,13 @@ pub async fn batch_calculate_target_positions(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
-    Ok(batch_calculate_positions(&targets, &location, dt, min_altitude))
+
+    Ok(batch_calculate_positions(
+        &targets,
+        &location,
+        dt,
+        min_altitude,
+    ))
 }
 
 /// Get Sun position
@@ -117,11 +125,11 @@ pub async fn get_sun_position(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
+
     let jd = datetime_to_jd(dt);
     let (ra, dec) = sun_position(jd);
     let (alt, az) = ra_dec_to_alt_az(ra, dec, location.latitude, location.longitude, jd);
-    
+
     Ok(CelestialPosition {
         altitude: alt,
         azimuth: az,
@@ -143,11 +151,11 @@ pub async fn get_moon_position(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
+
     let jd = datetime_to_jd(dt);
     let (ra, dec, distance) = moon_position(jd);
     let (alt, az) = ra_dec_to_alt_az(ra, dec, location.latitude, location.longitude, jd);
-    
+
     Ok(CelestialPosition {
         altitude: alt,
         azimuth: az,
@@ -170,12 +178,18 @@ pub async fn calculate_alt_az(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
+
     let jd = datetime_to_jd(dt);
     let ra = coordinates.ra_to_decimal();
     let dec = coordinates.dec_to_decimal();
-    
-    Ok(ra_dec_to_alt_az(ra, dec, location.latitude, location.longitude, jd))
+
+    Ok(ra_dec_to_alt_az(
+        ra,
+        dec,
+        location.latitude,
+        location.longitude,
+        jd,
+    ))
 }
 
 /// Get current Moon illumination percentage
@@ -198,19 +212,24 @@ pub async fn calculate_visibility_range(
         .map_err(|e| format!("Invalid start date: {}", e))?;
     let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid end date: {}", e))?;
-    
+
     if end < start {
         return Err("End date must be after start date".to_string());
     }
-    
+
     let mut results = Vec::new();
     let mut current = start;
-    
+
     while current <= end {
-        results.push(calculate_visibility_window(&coordinates, &location, current, min_altitude));
+        results.push(calculate_visibility_window(
+            &coordinates,
+            &location,
+            current,
+            min_altitude,
+        ));
         current = current.succ_opt().unwrap_or(current);
     }
-    
+
     Ok(results)
 }
 
@@ -225,19 +244,19 @@ pub async fn calculate_twilight_range(
         .map_err(|e| format!("Invalid start date: {}", e))?;
     let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid end date: {}", e))?;
-    
+
     if end < start {
         return Err("End date must be after start date".to_string());
     }
-    
+
     let mut results = Vec::new();
     let mut current = start;
-    
+
     while current <= end {
         results.push(calculate_twilight(&location, current));
         current = current.succ_opt().unwrap_or(current);
     }
-    
+
     Ok(results)
 }
 
@@ -251,25 +270,22 @@ pub async fn calculate_altitude_curve(
 ) -> Result<Vec<(String, f64, f64)>, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     let ra = coordinates.ra_to_decimal();
     let dec = coordinates.dec_to_decimal();
-    
-    let start = DateTime::from_naive_utc_and_offset(
-        date.and_hms_opt(0, 0, 0).unwrap(),
-        Utc,
-    );
-    
+
+    let start = DateTime::from_naive_utc_and_offset(date.and_hms_opt(0, 0, 0).unwrap(), Utc);
+
     let mut results = Vec::new();
     let interval = interval_minutes.max(1) as i64;
-    
+
     for i in 0..(24 * 60 / interval) {
         let dt = start + chrono::Duration::minutes(i * interval);
         let jd = datetime_to_jd(dt);
         let (alt, az) = ra_dec_to_alt_az(ra, dec, location.latitude, location.longitude, jd);
         results.push((dt.to_rfc3339(), alt, az));
     }
-    
+
     Ok(results)
 }
 
@@ -284,7 +300,7 @@ pub async fn is_target_visible(
     let ra = coordinates.ra_to_decimal();
     let dec = coordinates.dec_to_decimal();
     let (alt, _) = ra_dec_to_alt_az(ra, dec, location.latitude, location.longitude, jd);
-    
+
     Ok(alt >= min_altitude)
 }
 
@@ -301,11 +317,11 @@ pub async fn calculate_air_mass(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
+
     let jd = datetime_to_jd(dt);
     let ra = coordinates.ra_to_decimal();
     let dec = coordinates.dec_to_decimal();
     let (alt, _) = ra_dec_to_alt_az(ra, dec, location.latitude, location.longitude, jd);
-    
+
     Ok(crate::services::astronomy::air_mass(alt))
 }

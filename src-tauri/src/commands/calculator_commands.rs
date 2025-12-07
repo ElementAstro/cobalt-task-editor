@@ -1,7 +1,7 @@
 //! Calculator commands for astronomy and timing
 
-use tauri::command;
 use chrono::{DateTime, Utc};
+use tauri::command;
 
 use crate::models::*;
 use crate::services::calculator;
@@ -40,14 +40,18 @@ pub fn format_duration(seconds: f64) -> String {
 /// Format time
 #[command]
 pub fn format_time(datetime: String) -> Result<String, String> {
-    let dt: DateTime<Utc> = datetime.parse().map_err(|e| format!("Invalid datetime: {}", e))?;
+    let dt: DateTime<Utc> = datetime
+        .parse()
+        .map_err(|e| format!("Invalid datetime: {}", e))?;
     Ok(calculator::format_time(dt))
 }
 
 /// Calculate end time
 #[command]
 pub fn calculate_end_time(start: String, duration_seconds: f64) -> Result<String, String> {
-    let start_dt: DateTime<Utc> = start.parse().map_err(|e| format!("Invalid datetime: {}", e))?;
+    let start_dt: DateTime<Utc> = start
+        .parse()
+        .map_err(|e| format!("Invalid datetime: {}", e))?;
     let end_dt = calculator::calculate_end_time(start_dt, duration_seconds);
     Ok(end_dt.to_rfc3339())
 }
@@ -68,7 +72,11 @@ pub fn ra_to_decimal(hours: i32, minutes: i32, seconds: f64) -> f64 {
 #[command]
 pub fn decimal_to_ra(decimal: f64) -> RaResult {
     let (hours, minutes, seconds) = calculator::decimal_to_ra(decimal);
-    RaResult { hours, minutes, seconds }
+    RaResult {
+        hours,
+        minutes,
+        seconds,
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -88,7 +96,12 @@ pub fn dec_to_decimal(degrees: i32, minutes: i32, seconds: f64, negative: bool) 
 #[command]
 pub fn decimal_to_dec(decimal: f64) -> DecResult {
     let (degrees, minutes, seconds, negative) = calculator::decimal_to_dec(decimal);
-    DecResult { degrees, minutes, seconds, negative }
+    DecResult {
+        degrees,
+        minutes,
+        seconds,
+        negative,
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -109,12 +122,20 @@ pub fn calculate_altitude(
     datetime: Option<String>,
 ) -> Result<f64, String> {
     let dt = if let Some(dt_str) = datetime {
-        dt_str.parse().map_err(|e| format!("Invalid datetime: {}", e))?
+        dt_str
+            .parse()
+            .map_err(|e| format!("Invalid datetime: {}", e))?
     } else {
         Utc::now()
     };
-    
-    Ok(calculator::calculate_altitude(ra_hours, dec_degrees, latitude, longitude, dt))
+
+    Ok(calculator::calculate_altitude(
+        ra_hours,
+        dec_degrees,
+        latitude,
+        longitude,
+        dt,
+    ))
 }
 
 /// Check if object is above horizon
@@ -128,23 +149,34 @@ pub fn is_above_horizon(
     datetime: Option<String>,
 ) -> Result<bool, String> {
     let dt = if let Some(dt_str) = datetime {
-        dt_str.parse().map_err(|e| format!("Invalid datetime: {}", e))?
+        dt_str
+            .parse()
+            .map_err(|e| format!("Invalid datetime: {}", e))?
     } else {
         Utc::now()
     };
-    
-    Ok(calculator::is_above_horizon(ra_hours, dec_degrees, latitude, longitude, dt, min_altitude))
+
+    Ok(calculator::is_above_horizon(
+        ra_hours,
+        dec_degrees,
+        latitude,
+        longitude,
+        dt,
+        min_altitude,
+    ))
 }
 
 /// Calculate moon phase
 #[command]
 pub fn calculate_moon_phase(datetime: Option<String>) -> Result<f64, String> {
     let dt = if let Some(dt_str) = datetime {
-        dt_str.parse().map_err(|e| format!("Invalid datetime: {}", e))?
+        dt_str
+            .parse()
+            .map_err(|e| format!("Invalid datetime: {}", e))?
     } else {
         Utc::now()
     };
-    
+
     Ok(calculator::calculate_moon_phase(dt))
 }
 
@@ -152,11 +184,13 @@ pub fn calculate_moon_phase(datetime: Option<String>) -> Result<f64, String> {
 #[command]
 pub fn calculate_moon_illumination(datetime: Option<String>) -> Result<f64, String> {
     let dt = if let Some(dt_str) = datetime {
-        dt_str.parse().map_err(|e| format!("Invalid datetime: {}", e))?
+        dt_str
+            .parse()
+            .map_err(|e| format!("Invalid datetime: {}", e))?
     } else {
         Utc::now()
     };
-    
+
     Ok(calculator::calculate_moon_illumination(dt))
 }
 
@@ -164,7 +198,11 @@ pub fn calculate_moon_illumination(datetime: Option<String>) -> Result<f64, Stri
 #[command]
 pub fn parse_ra(ra_string: String) -> Result<RaResult, String> {
     Coordinates::parse_ra(&ra_string)
-        .map(|(hours, minutes, seconds)| RaResult { hours, minutes, seconds })
+        .map(|(hours, minutes, seconds)| RaResult {
+            hours,
+            minutes,
+            seconds,
+        })
         .ok_or_else(|| "Invalid RA format".to_string())
 }
 
@@ -172,7 +210,12 @@ pub fn parse_ra(ra_string: String) -> Result<RaResult, String> {
 #[command]
 pub fn parse_dec(dec_string: String) -> Result<DecResult, String> {
     Coordinates::parse_dec(&dec_string)
-        .map(|(degrees, minutes, seconds, negative)| DecResult { degrees, minutes, seconds, negative })
+        .map(|(degrees, minutes, seconds, negative)| DecResult {
+            degrees,
+            minutes,
+            seconds,
+            negative,
+        })
         .ok_or_else(|| "Invalid Dec format".to_string())
 }
 

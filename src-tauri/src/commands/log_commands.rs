@@ -43,18 +43,13 @@ pub fn log_with_details(
         "error" => LogLevel::Error,
         _ => LogLevel::Info,
     };
-    
+
     log_service::log_with_details(level, &category, &message, details);
 }
 
 /// Log operation
 #[command]
-pub fn log_operation(
-    operation: String,
-    target: String,
-    success: bool,
-    error: Option<String>,
-) {
+pub fn log_operation(operation: String, target: String, success: bool, error: Option<String>) {
     log_service::log_operation(&operation, &target, success, error.as_deref());
 }
 
@@ -68,7 +63,7 @@ pub fn get_recent_logs(count: usize, level_filter: Option<String>) -> Vec<LogEnt
         "error" => Some(LogLevel::Error),
         _ => None,
     });
-    
+
     log_service::get_recent_logs(count, level)
 }
 

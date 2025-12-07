@@ -1,11 +1,11 @@
 //! Template management service
 
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::fs;
-use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
 
-use crate::models::{SimpleSequence, SimpleTarget, SimpleExposure, EditorSequence};
+use crate::models::{EditorSequence, SimpleExposure, SimpleSequence, SimpleTarget};
 use crate::services::file_service;
 
 /// Template metadata
@@ -87,13 +87,13 @@ pub async fn ensure_template_directories() -> Result<(), String> {
         get_exposure_templates_directory(),
         get_editor_templates_directory(),
     ];
-    
+
     for dir in dirs {
         fs::create_dir_all(&dir)
             .await
             .map_err(|e| format!("Failed to create template directory: {}", e))?;
     }
-    
+
     Ok(())
 }
 
@@ -106,10 +106,10 @@ pub async fn save_simple_sequence_template(
     sequence: SimpleSequence,
 ) -> Result<TemplateMetadata, String> {
     ensure_template_directories().await?;
-    
+
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now();
-    
+
     let metadata = TemplateMetadata {
         id: id.clone(),
         name: name.to_string(),
@@ -120,48 +120,47 @@ pub async fn save_simple_sequence_template(
         tags,
         is_builtin: false,
     };
-    
+
     let template = SimpleSequenceTemplate {
         metadata: metadata.clone(),
         sequence,
     };
-    
+
     let path = get_simple_templates_directory().join(format!("{}.json", id));
     let content = serde_json::to_string_pretty(&template)
         .map_err(|e| format!("Failed to serialize template: {}", e))?;
-    
+
     fs::write(&path, content)
         .await
         .map_err(|e| format!("Failed to save template: {}", e))?;
-    
+
     Ok(metadata)
 }
 
 /// Load simple sequence template
 pub async fn load_simple_sequence_template(id: &str) -> Result<SimpleSequenceTemplate, String> {
     let path = get_simple_templates_directory().join(format!("{}.json", id));
-    
+
     let content = fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read template: {}", e))?;
-    
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse template: {}", e))
+
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse template: {}", e))
 }
 
 /// List simple sequence templates
 pub async fn list_simple_sequence_templates() -> Result<Vec<TemplateMetadata>, String> {
     let dir = get_simple_templates_directory();
-    
+
     if !dir.exists() {
         return Ok(Vec::new());
     }
-    
+
     let mut templates = Vec::new();
     let mut entries = fs::read_dir(&dir)
         .await
         .map_err(|e| format!("Failed to read templates directory: {}", e))?;
-    
+
     while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("json") {
@@ -172,21 +171,21 @@ pub async fn list_simple_sequence_templates() -> Result<Vec<TemplateMetadata>, S
             }
         }
     }
-    
+
     // Sort by name
     templates.sort_by(|a, b| a.name.cmp(&b.name));
-    
+
     Ok(templates)
 }
 
 /// Delete simple sequence template
 pub async fn delete_simple_sequence_template(id: &str) -> Result<(), String> {
     let path = get_simple_templates_directory().join(format!("{}.json", id));
-    
+
     if !path.exists() {
         return Err("Template not found".to_string());
     }
-    
+
     // Check if it's a builtin template
     if let Ok(content) = fs::read_to_string(&path).await {
         if let Ok(template) = serde_json::from_str::<SimpleSequenceTemplate>(&content) {
@@ -195,7 +194,7 @@ pub async fn delete_simple_sequence_template(id: &str) -> Result<(), String> {
             }
         }
     }
-    
+
     fs::remove_file(&path)
         .await
         .map_err(|e| format!("Failed to delete template: {}", e))
@@ -209,10 +208,10 @@ pub async fn save_target_template(
     target: SimpleTarget,
 ) -> Result<TemplateMetadata, String> {
     ensure_template_directories().await?;
-    
+
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now();
-    
+
     let metadata = TemplateMetadata {
         id: id.clone(),
         name: name.to_string(),
@@ -223,48 +222,47 @@ pub async fn save_target_template(
         tags,
         is_builtin: false,
     };
-    
+
     let template = TargetTemplate {
         metadata: metadata.clone(),
         target,
     };
-    
+
     let path = get_target_templates_directory().join(format!("{}.json", id));
     let content = serde_json::to_string_pretty(&template)
         .map_err(|e| format!("Failed to serialize template: {}", e))?;
-    
+
     fs::write(&path, content)
         .await
         .map_err(|e| format!("Failed to save template: {}", e))?;
-    
+
     Ok(metadata)
 }
 
 /// Load target template
 pub async fn load_target_template(id: &str) -> Result<TargetTemplate, String> {
     let path = get_target_templates_directory().join(format!("{}.json", id));
-    
+
     let content = fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read template: {}", e))?;
-    
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse template: {}", e))
+
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse template: {}", e))
 }
 
 /// List target templates
 pub async fn list_target_templates() -> Result<Vec<TemplateMetadata>, String> {
     let dir = get_target_templates_directory();
-    
+
     if !dir.exists() {
         return Ok(Vec::new());
     }
-    
+
     let mut templates = Vec::new();
     let mut entries = fs::read_dir(&dir)
         .await
         .map_err(|e| format!("Failed to read templates directory: {}", e))?;
-    
+
     while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("json") {
@@ -275,7 +273,7 @@ pub async fn list_target_templates() -> Result<Vec<TemplateMetadata>, String> {
             }
         }
     }
-    
+
     templates.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(templates)
 }
@@ -288,10 +286,10 @@ pub async fn save_exposure_set_template(
     exposures: Vec<SimpleExposure>,
 ) -> Result<TemplateMetadata, String> {
     ensure_template_directories().await?;
-    
+
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now();
-    
+
     let metadata = TemplateMetadata {
         id: id.clone(),
         name: name.to_string(),
@@ -302,48 +300,47 @@ pub async fn save_exposure_set_template(
         tags,
         is_builtin: false,
     };
-    
+
     let template = ExposureSetTemplate {
         metadata: metadata.clone(),
         exposures,
     };
-    
+
     let path = get_exposure_templates_directory().join(format!("{}.json", id));
     let content = serde_json::to_string_pretty(&template)
         .map_err(|e| format!("Failed to serialize template: {}", e))?;
-    
+
     fs::write(&path, content)
         .await
         .map_err(|e| format!("Failed to save template: {}", e))?;
-    
+
     Ok(metadata)
 }
 
 /// Load exposure set template
 pub async fn load_exposure_set_template(id: &str) -> Result<ExposureSetTemplate, String> {
     let path = get_exposure_templates_directory().join(format!("{}.json", id));
-    
+
     let content = fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read template: {}", e))?;
-    
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse template: {}", e))
+
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse template: {}", e))
 }
 
 /// List exposure set templates
 pub async fn list_exposure_set_templates() -> Result<Vec<TemplateMetadata>, String> {
     let dir = get_exposure_templates_directory();
-    
+
     if !dir.exists() {
         return Ok(Vec::new());
     }
-    
+
     let mut templates = Vec::new();
     let mut entries = fs::read_dir(&dir)
         .await
         .map_err(|e| format!("Failed to read templates directory: {}", e))?;
-    
+
     while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("json") {
@@ -354,7 +351,7 @@ pub async fn list_exposure_set_templates() -> Result<Vec<TemplateMetadata>, Stri
             }
         }
     }
-    
+
     templates.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(templates)
 }

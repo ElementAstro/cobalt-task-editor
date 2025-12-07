@@ -63,15 +63,15 @@ pub async fn load_simple_sequence_file(path: String) -> Result<SimpleSequence, S
     let sequence = file_service::load_simple_sequence(&path)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     // Add to recent files
     settings_service::add_recent_file(&path.display().to_string()).await?;
-    
+
     // Update last directory
     if let Some(parent) = path.parent() {
         settings_service::set_last_directory(&parent.display().to_string()).await?;
     }
-    
+
     Ok(sequence)
 }
 
@@ -85,15 +85,15 @@ pub async fn save_simple_sequence_file(
     file_service::save_simple_sequence(&path, &sequence)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     // Add to recent files
     settings_service::add_recent_file(&path.display().to_string()).await?;
-    
+
     // Update last directory
     if let Some(parent) = path.parent() {
         settings_service::set_last_directory(&parent.display().to_string()).await?;
     }
-    
+
     Ok(())
 }
 
@@ -104,10 +104,10 @@ pub async fn load_editor_sequence_file(path: String) -> Result<EditorSequence, S
     let sequence = file_service::load_editor_sequence(&path)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     // Add to recent files
     settings_service::add_recent_file(&path.display().to_string()).await?;
-    
+
     Ok(sequence)
 }
 
@@ -121,10 +121,10 @@ pub async fn save_editor_sequence_file(
     file_service::save_editor_sequence(&path, &sequence)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     // Add to recent files
     settings_service::add_recent_file(&path.display().to_string()).await?;
-    
+
     Ok(())
 }
 
@@ -180,7 +180,7 @@ pub async fn list_directory(
     let ext_refs: Option<Vec<&str>> = extensions
         .as_ref()
         .map(|v| v.iter().map(|s| s.as_str()).collect());
-    
+
     file_service::list_directory(&path, ext_refs.as_deref())
         .await
         .map_err(|e| e.to_string())
@@ -215,7 +215,9 @@ pub async fn copy_file(from: String, to: String) -> Result<(), String> {
 /// Get default save directory
 #[command]
 pub fn get_default_save_directory() -> String {
-    file_service::get_default_save_directory().display().to_string()
+    file_service::get_default_save_directory()
+        .display()
+        .to_string()
 }
 
 /// Get app data directory
@@ -228,21 +230,21 @@ pub fn get_app_data_directory() -> String {
 #[command]
 pub async fn auto_save_sequence(sequence: SimpleSequence) -> Result<String, String> {
     let path = file_service::create_auto_save_path(&sequence.id);
-    
+
     // Ensure directory exists
     if let Some(parent) = path.parent() {
         tokio::fs::create_dir_all(parent)
             .await
             .map_err(|e| e.to_string())?;
     }
-    
-    let contents = serializer::serialize_simple_sequence_json(&sequence)
-        .map_err(|e| e.to_string())?;
-    
+
+    let contents =
+        serializer::serialize_simple_sequence_json(&sequence).map_err(|e| e.to_string())?;
+
     file_service::write_file(&path, &contents)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     Ok(path.display().to_string())
 }
 
@@ -250,15 +252,15 @@ pub async fn auto_save_sequence(sequence: SimpleSequence) -> Result<String, Stri
 #[command]
 pub async fn load_auto_save(sequence_id: String) -> Result<Option<SimpleSequence>, String> {
     let path = file_service::create_auto_save_path(&sequence_id);
-    
+
     if !file_service::file_exists(&path).await {
         return Ok(None);
     }
-    
+
     let sequence = file_service::load_simple_sequence(&path)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     Ok(Some(sequence))
 }
 
@@ -266,12 +268,12 @@ pub async fn load_auto_save(sequence_id: String) -> Result<Option<SimpleSequence
 #[command]
 pub async fn clear_auto_save(sequence_id: String) -> Result<(), String> {
     let path = file_service::create_auto_save_path(&sequence_id);
-    
+
     if file_service::file_exists(&path).await {
         file_service::delete_file(&path)
             .await
             .map_err(|e| e.to_string())?;
     }
-    
+
     Ok(())
 }

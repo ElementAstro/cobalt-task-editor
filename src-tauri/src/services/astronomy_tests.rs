@@ -3,11 +3,11 @@
 #[cfg(test)]
 mod tests {
     use super::super::astronomy::*;
-    use chrono::{NaiveDate, Utc, TimeZone};
+    use chrono::{NaiveDate, TimeZone, Utc};
 
     fn test_location() -> ObserverLocation {
         ObserverLocation {
-            latitude: 40.7128,  // New York
+            latitude: 40.7128, // New York
             longitude: -74.0060,
             elevation: 10.0,
             timezone_offset: -5,
@@ -36,7 +36,7 @@ mod tests {
         let original = Utc::now();
         let jd = datetime_to_jd(original);
         let converted = jd_to_datetime(jd);
-        
+
         // Should be within 1 second
         assert!((original - converted).num_seconds().abs() < 2);
     }
@@ -75,10 +75,10 @@ mod tests {
     fn test_ra_dec_to_alt_az() {
         let location = test_location();
         let jd = datetime_to_jd(Utc::now());
-        
+
         // Test with Polaris (approximately)
         let (alt, az) = ra_dec_to_alt_az(2.5, 89.26, location.latitude, location.longitude, jd);
-        
+
         // Polaris should always be above horizon at this latitude
         assert!(alt > 0.0);
         // Azimuth should be valid
@@ -120,7 +120,7 @@ mod tests {
     fn test_sun_position_range() {
         let jd = datetime_to_jd(Utc::now());
         let (ra, dec) = sun_position(jd);
-        
+
         assert!(ra >= 0.0 && ra < 24.0);
         assert!(dec >= -23.5 && dec <= 23.5);
     }
@@ -130,7 +130,7 @@ mod tests {
         let location = test_location();
         let jd = datetime_to_jd(Utc::now());
         let alt = sun_altitude(&location, jd);
-        
+
         assert!(alt >= -90.0 && alt <= 90.0);
     }
 
@@ -142,7 +142,7 @@ mod tests {
     fn test_moon_position_range() {
         let jd = datetime_to_jd(Utc::now());
         let (ra, dec, distance) = moon_position(jd);
-        
+
         assert!(ra >= 0.0 && ra < 24.0);
         assert!(dec >= -30.0 && dec <= 30.0);
         assert!(distance > 350000.0 && distance < 420000.0);
@@ -152,7 +152,7 @@ mod tests {
     fn test_moon_phase_range() {
         let jd = datetime_to_jd(Utc::now());
         let phase = moon_phase(jd);
-        
+
         assert!(phase >= 0.0 && phase <= 1.0);
     }
 
@@ -160,7 +160,7 @@ mod tests {
     fn test_moon_illumination_range() {
         let jd = datetime_to_jd(Utc::now());
         let illum = moon_illumination(jd);
-        
+
         assert!(illum >= 0.0 && illum <= 100.0);
     }
 
@@ -180,9 +180,9 @@ mod tests {
     fn test_calculate_twilight() {
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 3, 21).unwrap(); // Spring equinox - more reliable
-        
+
         let twilight = calculate_twilight(&location, date);
-        
+
         assert_eq!(twilight.date, "2024-03-21");
         // At New York latitude (40.7), should not be polar
         // Note: calculation may vary, so we just check the date is correct
@@ -192,9 +192,9 @@ mod tests {
     fn test_twilight_order() {
         let location = test_location();
         let date = NaiveDate::from_ymd_opt(2024, 6, 21).unwrap();
-        
+
         let twilight = calculate_twilight(&location, date);
-        
+
         // Dawn times should be in order: astronomical < nautical < civil < sunrise
         if let (Some(astro), Some(naut), Some(civil), Some(sunrise)) = (
             twilight.astronomical_dawn,
@@ -217,9 +217,9 @@ mod tests {
         let location = test_location();
         let coords = test_coordinates();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let window = calculate_visibility_window(&coords, &location, date, 20.0);
-        
+
         // M31 should be visible from New York in October
         assert!(window.is_visible);
         assert!(window.max_altitude > 20.0);
@@ -232,9 +232,9 @@ mod tests {
         // Southern hemisphere object
         let coords = crate::models::Coordinates::new(12, 0, 0.0, 70, 0, 0.0, true); // -70 dec
         let date = NaiveDate::from_ymd_opt(2024, 6, 21).unwrap();
-        
+
         let window = calculate_visibility_window(&coords, &location, date, 20.0);
-        
+
         // Should not be visible from New York
         assert!(!window.is_visible);
     }
@@ -248,9 +248,9 @@ mod tests {
         let location = test_location();
         let coords = test_coordinates();
         let dt = Utc::now();
-        
+
         let quality = calculate_observation_quality(&coords, &location, dt);
-        
+
         assert!(quality.score >= 0.0 && quality.score <= 100.0);
         assert!(quality.altitude_score >= 0.0);
         assert!(quality.moon_score >= 0.0);
@@ -266,12 +266,15 @@ mod tests {
         let location = test_location();
         let targets = vec![
             ("m31".to_string(), test_coordinates()),
-            ("m42".to_string(), crate::models::Coordinates::new(5, 35, 16.0, 5, 23, 28.0, true)),
+            (
+                "m42".to_string(),
+                crate::models::Coordinates::new(5, 35, 16.0, 5, 23, 28.0, true),
+            ),
         ];
         let dt = Utc::now();
-        
+
         let results = batch_calculate_positions(&targets, &location, dt, 20.0);
-        
+
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].id, "m31");
         assert_eq!(results[1].id, "m42");
@@ -285,7 +288,7 @@ mod tests {
     fn test_get_moon_phase_info() {
         let dt = Utc::now();
         let info = get_moon_phase_info(dt);
-        
+
         assert!(info.phase >= 0.0 && info.phase <= 1.0);
         assert!(info.illumination >= 0.0 && info.illumination <= 100.0);
         assert!(!info.phase_name.is_empty());
@@ -301,9 +304,9 @@ mod tests {
         let location = test_location();
         let coords = test_coordinates();
         let date = NaiveDate::from_ymd_opt(2024, 10, 15).unwrap();
-        
+
         let optimal = find_optimal_observation_time(&coords, &location, date, 20.0);
-        
+
         // Should find an optimal time for M31 in October
         assert!(optimal.is_some());
     }

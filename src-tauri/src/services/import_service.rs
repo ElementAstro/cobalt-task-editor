@@ -10,8 +10,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::models::{Coordinates, SimpleTarget, SimpleExposure};
-use crate::models::common::{SequenceEntityStatus, SequenceMode, ImageType, BinningMode};
+use crate::models::common::{BinningMode, ImageType, SequenceEntityStatus, SequenceMode};
+use crate::models::{Coordinates, SimpleExposure, SimpleTarget};
 
 /// Import result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,30 +72,34 @@ pub enum DetectedCsvFormat {
 /// Detect CSV format from headers
 pub fn detect_csv_format(headers: &[String]) -> DetectedCsvFormat {
     let headers_lower: Vec<String> = headers.iter().map(|h| h.to_lowercase()).collect();
-    
+
     // Telescopius format
-    if headers_lower.contains(&"catalogue entry".to_string()) 
-        || headers_lower.contains(&"familiar name".to_string()) {
+    if headers_lower.contains(&"catalogue entry".to_string())
+        || headers_lower.contains(&"familiar name".to_string())
+    {
         return DetectedCsvFormat::Telescopius;
     }
-    
+
     // AstroPlanner format
-    if headers_lower.contains(&"object".to_string()) 
-        && headers_lower.contains(&"type".to_string()) {
+    if headers_lower.contains(&"object".to_string()) && headers_lower.contains(&"type".to_string())
+    {
         return DetectedCsvFormat::AstroPlanner;
     }
-    
+
     // Stellarium format
     if headers_lower.contains(&"designation".to_string()) {
         return DetectedCsvFormat::Stellarium;
     }
-    
+
     // Generic format with RA/Dec
-    if (headers_lower.contains(&"ra".to_string()) || headers_lower.contains(&"right ascension".to_string()))
-        && (headers_lower.contains(&"dec".to_string()) || headers_lower.contains(&"declination".to_string())) {
+    if (headers_lower.contains(&"ra".to_string())
+        || headers_lower.contains(&"right ascension".to_string()))
+        && (headers_lower.contains(&"dec".to_string())
+            || headers_lower.contains(&"declination".to_string()))
+    {
         return DetectedCsvFormat::Generic;
     }
-    
+
     DetectedCsvFormat::Unknown
 }
 
@@ -103,7 +107,7 @@ pub fn detect_csv_format(headers: &[String]) -> DetectedCsvFormat {
 pub fn parse_csv_content(content: &str, mapping: Option<CsvColumnMapping>) -> ImportResult {
     let mapping = mapping.unwrap_or_default();
     let delimiter = mapping.delimiter.unwrap_or(',');
-    
+
     let lines: Vec<&str> = content.lines().collect();
     if lines.is_empty() {
         return ImportResult {
@@ -117,12 +121,12 @@ pub fn parse_csv_content(content: &str, mapping: Option<CsvColumnMapping>) -> Im
             skipped_count: 0,
         };
     }
-    
+
     let mut targets = Vec::new();
     let errors: Vec<String> = Vec::new();
     let mut warnings = Vec::new();
     let mut skipped = 0;
-    
+
     // Parse headers
     let headers: Vec<String> = if mapping.has_header {
         parse_csv_line(lines[0], delimiter)
@@ -132,23 +136,23 @@ pub fn parse_csv_content(content: &str, mapping: Option<CsvColumnMapping>) -> Im
     } else {
         vec![]
     };
-    
+
     let format = if mapping.has_header {
         detect_csv_format(&headers)
     } else {
         DetectedCsvFormat::Generic
     };
-    
+
     let start_row = if mapping.has_header { 1 } else { 0 };
     let total_rows = lines.len() - start_row;
-    
+
     for (idx, line) in lines.iter().enumerate().skip(start_row) {
         if line.trim().is_empty() {
             continue;
         }
-        
+
         let fields = parse_csv_line(line, delimiter);
-        
+
         match parse_csv_row(&headers, &fields, &format, &mapping) {
             Ok(target) => targets.push(target),
             Err(e) => {
@@ -157,7 +161,7 @@ pub fn parse_csv_content(content: &str, mapping: Option<CsvColumnMapping>) -> Im
             }
         }
     }
-    
+
     ImportResult {
         success: errors.is_empty(),
         targets,
@@ -176,7 +180,7 @@ fn parse_csv_line(line: &str, delimiter: char) -> Vec<String> {
     let mut current = String::new();
     let mut in_quotes = false;
     let mut chars = line.chars().peekable();
-    
+
     while let Some(c) = chars.next() {
         match c {
             '"' => {
@@ -199,7 +203,7 @@ fn parse_csv_line(line: &str, delimiter: char) -> Vec<String> {
         }
     }
     fields.push(current.trim().to_string());
-    
+
     fields
 }
 
@@ -214,59 +218,65 @@ fn parse_csv_row(
         if headers.is_empty() {
             return None;
         }
-        headers.iter().position(|h| h.contains(name))
+        headers
+            .iter()
+            .position(|h| h.contains(name))
             .and_then(|i| fields.get(i).cloned())
             .filter(|s| !s.is_empty())
     };
-    
+
     // Get name
     let name = match format {
-        DetectedCsvFormat::Telescopius => {
-            get_field("familiar name")
-                .or_else(|| get_field("catalogue entry"))
-                .unwrap_or_else(|| "Unknown".to_string())
-        }
+        DetectedCsvFormat::Telescopius => get_field("familiar name")
+            .or_else(|| get_field("catalogue entry"))
+            .unwrap_or_else(|| "Unknown".to_string()),
         DetectedCsvFormat::AstroPlanner => {
             get_field("object").unwrap_or_else(|| "Unknown".to_string())
         }
         DetectedCsvFormat::Stellarium => {
             get_field("designation").unwrap_or_else(|| "Unknown".to_string())
         }
-        _ => {
-            mapping.name_column.as_ref()
-                .and_then(|col| get_field(&col.to_lowercase()))
-                .or_else(|| get_field("name"))
-                .or_else(|| get_field("target"))
-                .or_else(|| get_field("object"))
-                .unwrap_or_else(|| "Unknown".to_string())
-        }
+        _ => mapping
+            .name_column
+            .as_ref()
+            .and_then(|col| get_field(&col.to_lowercase()))
+            .or_else(|| get_field("name"))
+            .or_else(|| get_field("target"))
+            .or_else(|| get_field("object"))
+            .unwrap_or_else(|| "Unknown".to_string()),
     };
-    
+
     // Get RA
-    let ra_str = mapping.ra_column.as_ref()
+    let ra_str = mapping
+        .ra_column
+        .as_ref()
         .and_then(|col| get_field(&col.to_lowercase()))
         .or_else(|| get_field("ra"))
         .or_else(|| get_field("right ascension"))
         .ok_or("Missing RA column")?;
-    
+
     // Get Dec
-    let dec_str = mapping.dec_column.as_ref()
+    let dec_str = mapping
+        .dec_column
+        .as_ref()
         .and_then(|col| get_field(&col.to_lowercase()))
         .or_else(|| get_field("dec"))
         .or_else(|| get_field("declination"))
         .ok_or("Missing Dec column")?;
-    
+
     // Parse coordinates
     let coords = parse_coordinates(&ra_str, &dec_str)?;
-    
+
     // Get position angle
-    let position_angle = mapping.position_angle_column.as_ref()
+    let position_angle = mapping
+        .position_angle_column
+        .as_ref()
         .and_then(|col| get_field(&col.to_lowercase()))
         .or_else(|| get_field("position angle"))
         .or_else(|| get_field("pa"))
         .and_then(|s| s.parse::<f64>().ok())
         .unwrap_or(0.0);
-    
+
     Ok(SimpleTarget {
         id: uuid::Uuid::new_v4().to_string(),
         name: name.clone(),
@@ -303,7 +313,7 @@ fn parse_csv_row(
 fn parse_coordinates(ra_str: &str, dec_str: &str) -> Result<Coordinates, String> {
     let ra = parse_ra(ra_str)?;
     let dec = parse_dec(dec_str)?;
-    
+
     Ok(Coordinates {
         ra_hours: ra.0,
         ra_minutes: ra.1,
@@ -318,10 +328,10 @@ fn parse_coordinates(ra_str: &str, dec_str: &str) -> Result<Coordinates, String>
 /// Parse RA string
 fn parse_ra(s: &str) -> Result<(i32, i32, f64), String> {
     let s = s.trim();
-    
+
     // Try decimal hours
     if let Ok(hours) = s.parse::<f64>() {
-        if hours >= 0.0 && hours < 24.0 {
+        if (0.0..24.0).contains(&hours) {
             let h = hours.floor() as i32;
             let m_dec = (hours - h as f64) * 60.0;
             let m = m_dec.floor() as i32;
@@ -329,24 +339,39 @@ fn parse_ra(s: &str) -> Result<(i32, i32, f64), String> {
             return Ok((h, m, sec));
         }
     }
-    
+
     // Try HMS format: "00h 42m 44.3s" or "00:42:44.3"
     let re = regex_lite::Regex::new(r"(\d+)[h:\s]+(\d+)[m:\s]+(\d+\.?\d*)")
         .map_err(|_| "Invalid regex")?;
-    
+
     if let Some(caps) = re.captures(s) {
-        let h: i32 = caps.get(1).unwrap().as_str().parse().map_err(|_| "Invalid hours")?;
-        let m: i32 = caps.get(2).unwrap().as_str().parse().map_err(|_| "Invalid minutes")?;
-        let sec: f64 = caps.get(3).unwrap().as_str().parse().map_err(|_| "Invalid seconds")?;
-        
-        if h >= 0 && h < 24 && m >= 0 && m < 60 && sec >= 0.0 && sec < 60.0 {
+        let h: i32 = caps
+            .get(1)
+            .unwrap()
+            .as_str()
+            .parse()
+            .map_err(|_| "Invalid hours")?;
+        let m: i32 = caps
+            .get(2)
+            .unwrap()
+            .as_str()
+            .parse()
+            .map_err(|_| "Invalid minutes")?;
+        let sec: f64 = caps
+            .get(3)
+            .unwrap()
+            .as_str()
+            .parse()
+            .map_err(|_| "Invalid seconds")?;
+
+        if (0..24).contains(&h) && (0..60).contains(&m) && (0.0..60.0).contains(&sec) {
             return Ok((h, m, sec));
         }
     }
-    
+
     // Try decimal degrees (convert to hours)
     if let Ok(deg) = s.parse::<f64>() {
-        if deg >= 0.0 && deg < 360.0 {
+        if (0.0..360.0).contains(&deg) {
             let hours = deg / 15.0;
             let h = hours.floor() as i32;
             let m_dec = (hours - h as f64) * 60.0;
@@ -355,17 +380,17 @@ fn parse_ra(s: &str) -> Result<(i32, i32, f64), String> {
             return Ok((h, m, sec));
         }
     }
-    
+
     Err(format!("Cannot parse RA: {}", s))
 }
 
 /// Parse Dec string
 fn parse_dec(s: &str) -> Result<(i32, i32, f64, bool), String> {
     let s = s.trim();
-    
+
     // Try decimal degrees
     if let Ok(deg) = s.parse::<f64>() {
-        if deg >= -90.0 && deg <= 90.0 {
+        if (-90.0..=90.0).contains(&deg) {
             let negative = deg < 0.0;
             let abs_deg = deg.abs();
             let d = abs_deg.floor() as i32;
@@ -375,22 +400,37 @@ fn parse_dec(s: &str) -> Result<(i32, i32, f64, bool), String> {
             return Ok((d, m, sec, negative));
         }
     }
-    
+
     // Try DMS format: "+41° 16' 9.0\"" or "41:16:09.0"
     let re = regex_lite::Regex::new(r#"([+-]?)(\d+)[°d:\s]+(\d+)['m:\s]+(\d+\.?\d*)["s]?"#)
         .map_err(|_| "Invalid regex")?;
-    
+
     if let Some(caps) = re.captures(s) {
         let negative = caps.get(1).map(|m| m.as_str()) == Some("-");
-        let d: i32 = caps.get(2).unwrap().as_str().parse().map_err(|_| "Invalid degrees")?;
-        let m: i32 = caps.get(3).unwrap().as_str().parse().map_err(|_| "Invalid minutes")?;
-        let sec: f64 = caps.get(4).unwrap().as_str().parse().map_err(|_| "Invalid seconds")?;
-        
-        if d >= 0 && d <= 90 && m >= 0 && m < 60 && sec >= 0.0 && sec < 60.0 {
+        let d: i32 = caps
+            .get(2)
+            .unwrap()
+            .as_str()
+            .parse()
+            .map_err(|_| "Invalid degrees")?;
+        let m: i32 = caps
+            .get(3)
+            .unwrap()
+            .as_str()
+            .parse()
+            .map_err(|_| "Invalid minutes")?;
+        let sec: f64 = caps
+            .get(4)
+            .unwrap()
+            .as_str()
+            .parse()
+            .map_err(|_| "Invalid seconds")?;
+
+        if (0..=90).contains(&d) && (0..60).contains(&m) && (0.0..60.0).contains(&sec) {
             return Ok((d, m, sec, negative));
         }
     }
-    
+
     Err(format!("Cannot parse Dec: {}", s))
 }
 
@@ -403,15 +443,15 @@ pub fn parse_stellarium_skylist(content: &str) -> ImportResult {
     let mut targets = Vec::new();
     let errors: Vec<String> = Vec::new();
     let mut warnings = Vec::new();
-    
+
     for (idx, line) in content.lines().enumerate() {
         let line = line.trim();
-        
+
         // Skip comments and empty lines
         if line.is_empty() || line.starts_with('#') || line.starts_with("//") {
             continue;
         }
-        
+
         // Stellarium format: "Name RA Dec" or JSON-like format
         if line.starts_with('{') {
             // JSON format
@@ -434,7 +474,7 @@ pub fn parse_stellarium_skylist(content: &str) -> ImportResult {
                 let name = parts[0].to_string();
                 let ra_str = parts[1];
                 let dec_str = parts[2];
-                
+
                 match parse_coordinates(ra_str, dec_str) {
                     Ok(coords) => {
                         targets.push(create_target_from_coords(name, coords, 0.0));
@@ -446,10 +486,10 @@ pub fn parse_stellarium_skylist(content: &str) -> ImportResult {
             }
         }
     }
-    
+
     let imported_count = targets.len();
     let total_rows = content.lines().count();
-    
+
     ImportResult {
         success: errors.is_empty(),
         targets,
@@ -466,7 +506,7 @@ fn parse_stellarium_json(obj: &serde_json::Value) -> Option<SimpleTarget> {
     let name = obj.get("name")?.as_str()?.to_string();
     let ra = obj.get("ra")?.as_f64()?;
     let dec = obj.get("dec")?.as_f64()?;
-    
+
     let coords = Coordinates::from_decimal(ra / 15.0, dec);
     Some(create_target_from_coords(name, coords, 0.0))
 }
@@ -492,10 +532,10 @@ pub fn parse_voyager_format(content: &str) -> ImportResult {
     let errors: Vec<String> = Vec::new();
     let mut warnings = Vec::new();
     let mut current_target: Option<HashMap<String, String>> = None;
-    
+
     for line in content.lines() {
         let line = line.trim();
-        
+
         if line.starts_with('[') && line.ends_with(']') {
             // Save previous target
             if let Some(data) = current_target.take() {
@@ -504,9 +544,9 @@ pub fn parse_voyager_format(content: &str) -> ImportResult {
                     Err(e) => warnings.push(e),
                 }
             }
-            
+
             // Start new target
-            let name = line[1..line.len()-1].to_string();
+            let name = line[1..line.len() - 1].to_string();
             let mut map = HashMap::new();
             map.insert("name".to_string(), name);
             current_target = Some(map);
@@ -516,7 +556,7 @@ pub fn parse_voyager_format(content: &str) -> ImportResult {
             }
         }
     }
-    
+
     // Save last target
     if let Some(data) = current_target {
         match create_target_from_map(&data) {
@@ -524,10 +564,10 @@ pub fn parse_voyager_format(content: &str) -> ImportResult {
             Err(e) => warnings.push(e),
         }
     }
-    
+
     let imported_count = targets.len();
     let total_rows = content.lines().count();
-    
+
     ImportResult {
         success: errors.is_empty(),
         targets,
@@ -541,23 +581,29 @@ pub fn parse_voyager_format(content: &str) -> ImportResult {
 }
 
 fn create_target_from_map(data: &HashMap<String, String>) -> Result<SimpleTarget, String> {
-    let name = data.get("name").cloned().unwrap_or_else(|| "Unknown".to_string());
-    
-    let ra_str = data.get("ra")
+    let name = data
+        .get("name")
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    let ra_str = data
+        .get("ra")
         .or_else(|| data.get("rightascension"))
         .ok_or("Missing RA")?;
-    
-    let dec_str = data.get("dec")
+
+    let dec_str = data
+        .get("dec")
         .or_else(|| data.get("declination"))
         .ok_or("Missing Dec")?;
-    
+
     let coords = parse_coordinates(ra_str, dec_str)?;
-    
-    let position_angle = data.get("pa")
+
+    let position_angle = data
+        .get("pa")
         .or_else(|| data.get("positionangle"))
         .and_then(|s| s.parse::<f64>().ok())
         .unwrap_or(0.0);
-    
+
     Ok(create_target_from_coords(name, coords, position_angle))
 }
 
@@ -570,24 +616,25 @@ pub fn parse_xml_targets(content: &str, format_name: &str) -> ImportResult {
     let mut targets = Vec::new();
     let errors: Vec<String> = Vec::new();
     let mut warnings = Vec::new();
-    
+
     // Simple XML parsing without external dependencies
-    let target_regex = regex_lite::Regex::new(
-        r"<(?:Target|Object|DSO)[^>]*>([\s\S]*?)</(?:Target|Object|DSO)>"
-    ).unwrap();
-    
+    let target_regex =
+        regex_lite::Regex::new(r"<(?:Target|Object|DSO)[^>]*>([\s\S]*?)</(?:Target|Object|DSO)>")
+            .unwrap();
+
     let name_regex = regex_lite::Regex::new(r"<(?:Name|TargetName)>([^<]+)</").unwrap();
     let ra_regex = regex_lite::Regex::new(r"<(?:RA|RightAscension)>([^<]+)</").unwrap();
     let dec_regex = regex_lite::Regex::new(r"<(?:Dec|Declination)>([^<]+)</").unwrap();
     let pa_regex = regex_lite::Regex::new(r"<(?:PA|PositionAngle)>([^<]+)</").unwrap();
-    
+
     for cap in target_regex.captures_iter(content) {
         let target_xml = &cap[1];
-        
-        let name = name_regex.captures(target_xml)
+
+        let name = name_regex
+            .captures(target_xml)
             .map(|c| c[1].to_string())
             .unwrap_or_else(|| "Unknown".to_string());
-        
+
         let ra_str = match ra_regex.captures(target_xml) {
             Some(c) => c[1].to_string(),
             None => {
@@ -595,7 +642,7 @@ pub fn parse_xml_targets(content: &str, format_name: &str) -> ImportResult {
                 continue;
             }
         };
-        
+
         let dec_str = match dec_regex.captures(target_xml) {
             Some(c) => c[1].to_string(),
             None => {
@@ -603,11 +650,12 @@ pub fn parse_xml_targets(content: &str, format_name: &str) -> ImportResult {
                 continue;
             }
         };
-        
-        let position_angle = pa_regex.captures(target_xml)
+
+        let position_angle = pa_regex
+            .captures(target_xml)
             .and_then(|c| c[1].parse::<f64>().ok())
             .unwrap_or(0.0);
-        
+
         match parse_coordinates(&ra_str, &dec_str) {
             Ok(coords) => {
                 targets.push(create_target_from_coords(name, coords, position_angle));
@@ -617,10 +665,10 @@ pub fn parse_xml_targets(content: &str, format_name: &str) -> ImportResult {
             }
         }
     }
-    
+
     let imported_count = targets.len();
     let total_rows = target_regex.captures_iter(content).count();
-    
+
     ImportResult {
         success: errors.is_empty(),
         targets,
@@ -675,7 +723,7 @@ pub fn parse_fits_header(content: &[u8]) -> Result<FitsHeaderInfo, String> {
     if content.len() < 2880 {
         return Err("File too small to be a valid FITS file".to_string());
     }
-    
+
     let header_str = String::from_utf8_lossy(&content[..2880.min(content.len())]);
     let mut info = FitsHeaderInfo {
         object_name: None,
@@ -691,16 +739,16 @@ pub fn parse_fits_header(content: &[u8]) -> Result<FitsHeaderInfo, String> {
         telescope: None,
         instrument: None,
     };
-    
+
     for i in 0..(header_str.len() / 80) {
-        let line = &header_str[i*80..(i+1)*80];
+        let line = &header_str[i * 80..(i + 1) * 80];
         let key = line[..8].trim();
-        
+
         if line.len() > 10 && &line[8..10] == "= " {
             let value = line[10..].trim();
             let value = value.split('/').next().unwrap_or(value).trim();
             let value = value.trim_matches('\'').trim();
-            
+
             match key {
                 "OBJECT" => info.object_name = Some(value.to_string()),
                 "RA" | "OBJCTRA" => info.ra = value.parse().ok(),
@@ -717,12 +765,12 @@ pub fn parse_fits_header(content: &[u8]) -> Result<FitsHeaderInfo, String> {
                 _ => {}
             }
         }
-        
+
         if key == "END" {
             break;
         }
     }
-    
+
     Ok(info)
 }
 
@@ -731,15 +779,15 @@ pub fn create_target_from_fits(info: &FitsHeaderInfo) -> Option<SimpleTarget> {
     let name = info.object_name.clone()?;
     let ra = info.ra?;
     let dec = info.dec?;
-    
+
     let coords = Coordinates::from_decimal(ra / 15.0, dec);
     let mut target = create_target_from_coords(name, coords, 0.0);
-    
+
     // Add exposure if we have exposure info
     if let Some(exp_time) = info.exposure_time {
         let mut exposure = create_default_exposure();
         exposure.exposure_time = exp_time;
-        
+
         if let Some(ref filter_name) = info.filter {
             exposure.filter = Some(crate::models::common::FilterInfo {
                 name: filter_name.clone(),
@@ -748,22 +796,22 @@ pub fn create_target_from_fits(info: &FitsHeaderInfo) -> Option<SimpleTarget> {
                 auto_focus_exposure_time: None,
             });
         }
-        
+
         if let Some(gain) = info.gain {
             exposure.gain = gain;
         }
-        
+
         if let Some(offset) = info.offset {
             exposure.offset = offset;
         }
-        
+
         if let (Some(x), Some(y)) = (info.binning_x, info.binning_y) {
             exposure.binning = BinningMode { x, y };
         }
-        
+
         target.exposures = vec![exposure];
     }
-    
+
     Some(target)
 }
 
@@ -771,7 +819,11 @@ pub fn create_target_from_fits(info: &FitsHeaderInfo) -> Option<SimpleTarget> {
 // Helper Functions
 // ============================================================================
 
-fn create_target_from_coords(name: String, coords: Coordinates, position_angle: f64) -> SimpleTarget {
+fn create_target_from_coords(
+    name: String,
+    coords: Coordinates,
+    position_angle: f64,
+) -> SimpleTarget {
     SimpleTarget {
         id: uuid::Uuid::new_v4().to_string(),
         name: name.clone(),
@@ -851,9 +903,15 @@ mod tests {
     #[test]
     fn test_detect_csv_format() {
         let telescopius = vec!["Catalogue Entry".to_string(), "RA".to_string()];
-        assert!(matches!(detect_csv_format(&telescopius), DetectedCsvFormat::Telescopius));
-        
+        assert!(matches!(
+            detect_csv_format(&telescopius),
+            DetectedCsvFormat::Telescopius
+        ));
+
         let generic = vec!["name".to_string(), "ra".to_string(), "dec".to_string()];
-        assert!(matches!(detect_csv_format(&generic), DetectedCsvFormat::Generic));
+        assert!(matches!(
+            detect_csv_format(&generic),
+            DetectedCsvFormat::Generic
+        ));
     }
 }

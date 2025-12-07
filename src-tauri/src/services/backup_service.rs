@@ -1,9 +1,9 @@
 //! Backup and recovery service
 
+use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::fs;
-use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc, Duration};
 
 use crate::models::SimpleSequence;
 use crate::services::file_service;
@@ -46,11 +46,11 @@ pub async fn ensure_backup_directories() -> Result<(), String> {
     fs::create_dir_all(get_backups_directory())
         .await
         .map_err(|e| format!("Failed to create backups directory: {}", e))?;
-    
+
     fs::create_dir_all(get_crash_recovery_directory())
         .await
         .map_err(|e| format!("Failed to create crash recovery directory: {}", e))?;
-    
+
     Ok(())
 }
 
@@ -60,23 +60,19 @@ pub async fn create_backup(
     backup_type: BackupType,
 ) -> Result<BackupMetadata, String> {
     ensure_backup_directories().await?;
-    
+
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now();
-    let filename = format!(
-        "{}_{}.json",
-        sequence.id,
-        now.format("%Y%m%d_%H%M%S")
-    );
+    let filename = format!("{}_{}.json", sequence.id, now.format("%Y%m%d_%H%M%S"));
     let path = get_backups_directory().join(&filename);
-    
+
     let content = serde_json::to_string_pretty(sequence)
         .map_err(|e| format!("Failed to serialize sequence: {}", e))?;
-    
+
     fs::write(&path, &content)
         .await
         .map_err(|e| format!("Failed to write backup: {}", e))?;
-    
+
     let metadata = BackupMetadata {
         id,
         sequence_id: sequence.id.clone(),
@@ -86,36 +82,36 @@ pub async fn create_backup(
         file_size: content.len() as u64,
         backup_type,
     };
-    
+
     // Save metadata
     let metadata_path = path.with_extension("meta.json");
     let metadata_content = serde_json::to_string_pretty(&metadata)
         .map_err(|e| format!("Failed to serialize metadata: {}", e))?;
-    
+
     fs::write(&metadata_path, metadata_content)
         .await
         .map_err(|e| format!("Failed to write metadata: {}", e))?;
-    
+
     Ok(metadata)
 }
 
 /// List backups for a sequence
 pub async fn list_backups(sequence_id: Option<&str>) -> Result<Vec<BackupMetadata>, String> {
     let dir = get_backups_directory();
-    
+
     if !dir.exists() {
         return Ok(Vec::new());
     }
-    
+
     let mut backups = Vec::new();
     let mut entries = fs::read_dir(&dir)
         .await
         .map_err(|e| format!("Failed to read backups directory: {}", e))?;
-    
+
     while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
         let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("json") 
-            && !path.to_string_lossy().contains(".meta.") 
+        if path.extension().and_then(|e| e.to_str()) == Some("json")
+            && !path.to_string_lossy().contains(".meta.")
         {
             let meta_path = path.with_extension("meta.json");
             if let Ok(content) = fs::read_to_string(&meta_path).await {
@@ -128,67 +124,63 @@ pub async fn list_backups(sequence_id: Option<&str>) -> Result<Vec<BackupMetadat
             }
         }
     }
-    
+
     // Sort by creation time (newest first)
     backups.sort_by(|a, b| b.created_at.cmp(&a.created_at));
-    
+
     Ok(backups)
 }
 
 /// Restore backup
 pub async fn restore_backup(backup_id: &str) -> Result<SimpleSequence, String> {
     let backups = list_backups(None).await?;
-    
+
     let backup = backups
         .iter()
         .find(|b| b.id == backup_id)
         .ok_or_else(|| "Backup not found".to_string())?;
-    
+
     let content = fs::read_to_string(&backup.file_path)
         .await
         .map_err(|e| format!("Failed to read backup: {}", e))?;
-    
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse backup: {}", e))
+
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse backup: {}", e))
 }
 
 /// Delete backup
 pub async fn delete_backup(backup_id: &str) -> Result<(), String> {
     let backups = list_backups(None).await?;
-    
+
     let backup = backups
         .iter()
         .find(|b| b.id == backup_id)
         .ok_or_else(|| "Backup not found".to_string())?;
-    
+
     let path = PathBuf::from(&backup.file_path);
     let meta_path = path.with_extension("meta.json");
-    
+
     if path.exists() {
         fs::remove_file(&path)
             .await
             .map_err(|e| format!("Failed to delete backup: {}", e))?;
     }
-    
+
     if meta_path.exists() {
         fs::remove_file(&meta_path)
             .await
             .map_err(|e| format!("Failed to delete metadata: {}", e))?;
     }
-    
+
     Ok(())
 }
 
 /// Clean old backups (keep only recent ones)
-pub async fn clean_old_backups(
-    max_age_days: i64,
-    max_count: usize,
-) -> Result<usize, String> {
+pub async fn clean_old_backups(max_age_days: i64, max_count: usize) -> Result<usize, String> {
     let backups = list_backups(None).await?;
     let cutoff = Utc::now() - Duration::days(max_age_days);
-    
+
     let mut deleted = 0;
-    
+
     // Delete old backups
     for backup in &backups {
         if backup.created_at < cutoff {
@@ -199,7 +191,7 @@ pub async fn clean_old_backups(
             }
         }
     }
-    
+
     // If still too many, delete oldest
     let remaining = list_backups(None).await?;
     if remaining.len() > max_count {
@@ -212,70 +204,70 @@ pub async fn clean_old_backups(
             }
         }
     }
-    
+
     Ok(deleted)
 }
 
 /// Save crash recovery data
 pub async fn save_crash_recovery(sequence: &SimpleSequence) -> Result<String, String> {
     ensure_backup_directories().await?;
-    
+
     let path = get_crash_recovery_directory().join(format!("{}.json", sequence.id));
-    
+
     let content = serde_json::to_string_pretty(sequence)
         .map_err(|e| format!("Failed to serialize sequence: {}", e))?;
-    
+
     fs::write(&path, content)
         .await
         .map_err(|e| format!("Failed to write crash recovery: {}", e))?;
-    
+
     Ok(path.display().to_string())
 }
 
 /// Load crash recovery data
 pub async fn load_crash_recovery(sequence_id: &str) -> Result<Option<SimpleSequence>, String> {
     let path = get_crash_recovery_directory().join(format!("{}.json", sequence_id));
-    
+
     if !path.exists() {
         return Ok(None);
     }
-    
+
     let content = fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read crash recovery: {}", e))?;
-    
+
     let sequence = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse crash recovery: {}", e))?;
-    
+
     Ok(Some(sequence))
 }
 
 /// Clear crash recovery data
 pub async fn clear_crash_recovery(sequence_id: &str) -> Result<(), String> {
     let path = get_crash_recovery_directory().join(format!("{}.json", sequence_id));
-    
+
     if path.exists() {
         fs::remove_file(&path)
             .await
             .map_err(|e| format!("Failed to delete crash recovery: {}", e))?;
     }
-    
+
     Ok(())
 }
 
 /// List all crash recovery files
 pub async fn list_crash_recovery() -> Result<Vec<String>, String> {
     let dir = get_crash_recovery_directory();
-    
+
     if !dir.exists() {
         return Ok(Vec::new());
     }
-    
+
     let mut ids = Vec::new();
     let mut entries = fs::read_dir(&dir)
         .await
         .map_err(|e| format!("Failed to read crash recovery directory: {}", e))?;
-    
+
     while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("json") {
@@ -284,6 +276,6 @@ pub async fn list_crash_recovery() -> Result<Vec<String>, String> {
             }
         }
     }
-    
+
     Ok(ids)
 }

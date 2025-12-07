@@ -18,7 +18,7 @@ pub async fn create_backup(
         "crash" => BackupType::Crash,
         _ => BackupType::Manual,
     };
-    
+
     backup_service::create_backup(&sequence, backup_type).await
 }
 
@@ -42,10 +42,7 @@ pub async fn delete_backup(backup_id: String) -> Result<(), String> {
 
 /// Clean old backups
 #[command]
-pub async fn clean_old_backups(
-    max_age_days: i64,
-    max_count: usize,
-) -> Result<usize, String> {
+pub async fn clean_old_backups(max_age_days: i64, max_count: usize) -> Result<usize, String> {
     backup_service::clean_old_backups(max_age_days, max_count).await
 }
 
@@ -76,7 +73,6 @@ pub async fn list_crash_recovery() -> Result<Vec<String>, String> {
 /// Check if crash recovery exists
 #[command]
 pub async fn has_crash_recovery(sequence_id: String) -> Result<bool, String> {
-    let path = backup_service::get_crash_recovery_directory()
-        .join(format!("{}.json", sequence_id));
+    let path = backup_service::get_crash_recovery_directory().join(format!("{}.json", sequence_id));
     Ok(path.exists())
 }

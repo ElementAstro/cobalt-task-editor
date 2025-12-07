@@ -1,5 +1,5 @@
 //! NINA Advanced Sequence types
-//! 
+//!
 //! These types represent the full NINA sequencer format with containers,
 //! conditions, triggers, and nested items.
 
@@ -211,12 +211,7 @@ impl EditorSequence {
     pub fn total_item_count(&self) -> usize {
         fn count_items(items: &[EditorSequenceItem]) -> usize {
             items.iter().fold(0, |acc, item| {
-                acc + 1
-                    + item
-                        .items
-                        .as_ref()
-                        .map(|i| count_items(i))
-                        .unwrap_or(0)
+                acc + 1 + item.items.as_ref().map(|i| count_items(i)).unwrap_or(0)
             })
         }
 
@@ -298,7 +293,9 @@ pub mod nina_format {
     impl Default for NinaExecutionStrategy {
         fn default() -> Self {
             Self {
-                type_name: "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer".to_string(),
+                type_name:
+                    "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer"
+                        .to_string(),
             }
         }
     }

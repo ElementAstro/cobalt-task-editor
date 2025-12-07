@@ -38,7 +38,7 @@ pub fn validate_nina_json(json: &str) -> ValidationResult {
         Ok(value) => {
             let mut errors = Vec::new();
             let mut warnings = Vec::new();
-            
+
             // Check for $type field
             if value.get("$type").is_none() {
                 errors.push("Missing $type field".to_string());
@@ -48,19 +48,19 @@ pub fn validate_nina_json(json: &str) -> ValidationResult {
                     errors.push("Root element must be a container type".to_string());
                 }
             }
-            
+
             // Check for Items structure
             if let Some(items) = value.get("Items") {
                 if items.get("$values").is_none() {
                     errors.push("Items collection missing $values array".to_string());
                 }
             }
-            
+
             // Check for common issues
             if value.get("Name").is_none() && value.get("SequenceTitle").is_none() {
                 warnings.push("Sequence has no name or title".to_string());
             }
-            
+
             ValidationResult {
                 valid: errors.is_empty(),
                 errors,
@@ -83,7 +83,7 @@ pub fn get_short_type_name(full_type: &str) -> String {
     // Extract class name from "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"
     // First, get the part before the comma (the full type path)
     let type_path = full_type.split(',').next().unwrap_or(full_type);
-    
+
     // Then get the last part after the final dot
     if let Some(pos) = type_path.rfind('.') {
         return type_path[pos + 1..].to_string();
@@ -96,7 +96,7 @@ pub fn get_type_category(full_type: &str) -> String {
     // Extract category from "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"
     // First, get the part before the comma
     let type_path = full_type.split(',').next().unwrap_or(full_type);
-    
+
     let parts: Vec<&str> = type_path.split('.').collect();
     if parts.len() >= 2 {
         // Category is second to last part
@@ -127,7 +127,11 @@ mod tests {
 
     #[test]
     fn test_is_container_type() {
-        assert!(is_container_type("NINA.Sequencer.Container.SequentialContainer, NINA.Sequencer"));
-        assert!(!is_container_type("NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"));
+        assert!(is_container_type(
+            "NINA.Sequencer.Container.SequentialContainer, NINA.Sequencer"
+        ));
+        assert!(!is_container_type(
+            "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"
+        ));
     }
 }

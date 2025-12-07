@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Play, Flag } from 'lucide-react';
-import { useI18n } from '@/lib/i18n';
-import type { AreaMarkerData } from '@/lib/nina/workflow-utils';
-import { getAreaColor } from '@/lib/nina/workflow-utils';
+import { memo } from "react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Play, Flag } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+import type { AreaMarkerData } from "@/lib/nina/workflow-utils";
+import { getAreaColor } from "@/lib/nina/workflow-utils";
 
 function AreaStartNodeComponent({ data }: NodeProps) {
   const nodeData = data as unknown as AreaMarkerData;
@@ -28,7 +28,7 @@ function AreaStartNodeComponent({ data }: NodeProps) {
       <span className="text-sm font-semibold" style={{ color }}>
         {areaLabels[area] || label}
       </span>
-      
+
       <Handle
         type="source"
         position={Position.Bottom}
@@ -55,7 +55,7 @@ function AreaEndNodeComponent({ data }: NodeProps) {
         className="w-3! h-3! border-2! border-background!"
         style={{ backgroundColor: color }}
       />
-      
+
       <Flag className="w-3 h-3" style={{ color }} />
       <span className="text-xs font-medium" style={{ color }}>
         End

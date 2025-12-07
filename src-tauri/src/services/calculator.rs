@@ -1,7 +1,7 @@
 //! Calculation services for astronomy and sequence timing
 
 use crate::models::*;
-use chrono::{DateTime, Utc, Duration};
+use chrono::{DateTime, Duration, Utc};
 
 /// Calculate total runtime for a simple sequence
 pub fn calculate_sequence_runtime(sequence: &SimpleSequence) -> f64 {
@@ -28,13 +28,13 @@ pub fn format_duration(seconds: f64) -> String {
     if seconds < 0.0 {
         return "0s".to_string();
     }
-    
+
     let total_seconds = seconds as i64;
     let days = total_seconds / 86400;
     let hours = (total_seconds % 86400) / 3600;
     let minutes = (total_seconds % 3600) / 60;
     let secs = total_seconds % 60;
-    
+
     if days > 0 {
         format!("{}d {}h {}m {}s", days, hours, minutes, secs)
     } else if hours > 0 {
@@ -78,7 +78,11 @@ pub fn decimal_to_ra(decimal: f64) -> (i32, i32, f64) {
 /// Convert Dec from DMS to decimal degrees
 pub fn dec_to_decimal(degrees: i32, minutes: i32, seconds: f64, negative: bool) -> f64 {
     let value = degrees.abs() as f64 + minutes as f64 / 60.0 + seconds / 3600.0;
-    if negative { -value } else { value }
+    if negative {
+        -value
+    } else {
+        value
+    }
 }
 
 /// Convert Dec from decimal degrees to DMS
@@ -89,7 +93,12 @@ pub fn decimal_to_dec(decimal: f64) -> (i32, i32, f64, bool) {
     let minutes_decimal = (abs_decimal - degrees as f64) * 60.0;
     let minutes = minutes_decimal.floor() as i32;
     let seconds = (minutes_decimal - minutes as f64) * 60.0;
-    (degrees, minutes, (seconds * 100.0).round() / 100.0, negative)
+    (
+        degrees,
+        minutes,
+        (seconds * 100.0).round() / 100.0,
+        negative,
+    )
 }
 
 /// Calculate altitude of an object at a given time
@@ -104,14 +113,14 @@ pub fn calculate_altitude(
     // Convert to radians
     let lat_rad = latitude.to_radians();
     let dec_rad = dec_degrees.to_radians();
-    
+
     // Calculate Local Sidereal Time (simplified)
     let jd = datetime_to_julian_day(datetime);
     let lst = calculate_lst(jd, longitude);
-    
+
     // Calculate Hour Angle
     let ha = (lst - ra_hours * 15.0).to_radians();
-    
+
     // Calculate altitude
     let sin_alt = lat_rad.sin() * dec_rad.sin() + lat_rad.cos() * dec_rad.cos() * ha.cos();
     sin_alt.asin().to_degrees()
@@ -125,31 +134,28 @@ fn datetime_to_julian_day(datetime: DateTime<Utc>) -> f64 {
     let hour = datetime.format("%H").to_string().parse::<f64>().unwrap();
     let minute = datetime.format("%M").to_string().parse::<f64>().unwrap();
     let second = datetime.format("%S").to_string().parse::<f64>().unwrap();
-    
+
     let day_fraction = day + (hour + minute / 60.0 + second / 3600.0) / 24.0;
-    
+
     let (y, m) = if month <= 2 {
         (year - 1, month + 12)
     } else {
         (year, month)
     };
-    
+
     let a = (y as f64 / 100.0).floor();
     let b = 2.0 - a + (a / 4.0).floor();
-    
-    (365.25 * (y as f64 + 4716.0)).floor() 
-        + (30.6001 * (m as f64 + 1.0)).floor() 
-        + day_fraction + b - 1524.5
+
+    (365.25 * (y as f64 + 4716.0)).floor() + (30.6001 * (m as f64 + 1.0)).floor() + day_fraction + b
+        - 1524.5
 }
 
 /// Calculate Local Sidereal Time in degrees
 fn calculate_lst(jd: f64, longitude: f64) -> f64 {
     let t = (jd - 2451545.0) / 36525.0;
-    let gmst = 280.46061837 
-        + 360.98564736629 * (jd - 2451545.0) 
-        + 0.000387933 * t * t 
+    let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * t * t
         - t * t * t / 38710000.0;
-    
+
     let lst = gmst + longitude;
     lst.rem_euclid(360.0)
 }
@@ -198,7 +204,7 @@ mod tests {
         assert_eq!(h, 12);
         assert_eq!(m, 30);
         assert!((s - 0.0).abs() < 0.01);
-        
+
         let decimal = ra_to_decimal(12, 30, 0.0);
         assert!((decimal - 12.5).abs() < 0.001);
     }
@@ -210,7 +216,7 @@ mod tests {
         assert_eq!(m, 30);
         assert!((s - 0.0).abs() < 0.01);
         assert!(neg);
-        
+
         let decimal = dec_to_decimal(45, 30, 0.0, true);
         assert!((decimal + 45.5).abs() < 0.001);
     }

@@ -8,11 +8,10 @@ use tauri::command;
 use crate::models::SimpleSequence;
 use crate::services::astronomy::ObserverLocation;
 use crate::services::sequence_optimizer::{
-    OptimizationStrategy, OptimizationResult, ConflictResult,
-    TargetScheduleInfo, BatchCalculationResult,
-    optimize_sequence, detect_conflicts, calculate_etas_parallel,
-    calculate_visibility_parallel, get_schedule_info,
-    apply_optimized_order, merge_sequences, split_sequence,
+    apply_optimized_order, calculate_etas_parallel, calculate_visibility_parallel,
+    detect_conflicts, get_schedule_info, merge_sequences, optimize_sequence, split_sequence,
+    BatchCalculationResult, ConflictResult, OptimizationResult, OptimizationStrategy,
+    TargetScheduleInfo,
 };
 
 /// Optimize sequence target order
@@ -25,7 +24,7 @@ pub async fn optimize_target_order(
 ) -> Result<OptimizationResult, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     let strategy = match strategy.to_lowercase().as_str() {
         "max_altitude" | "maxaltitude" => OptimizationStrategy::MaxAltitude,
         "transit_time" | "transittime" => OptimizationStrategy::TransitTime,
@@ -33,9 +32,9 @@ pub async fn optimize_target_order(
         "visibility_duration" | "visibilityduration" => OptimizationStrategy::VisibilityDuration,
         "minimize_slew" | "minimizeslew" => OptimizationStrategy::MinimizeSlew,
         "moon_avoidance" | "moonavoidance" => OptimizationStrategy::MoonAvoidance,
-        "combined" | _ => OptimizationStrategy::Combined,
+        _ => OptimizationStrategy::Combined,
     };
-    
+
     Ok(optimize_sequence(&sequence, &location, date, strategy))
 }
 
@@ -48,7 +47,7 @@ pub async fn detect_schedule_conflicts(
 ) -> Result<ConflictResult, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     Ok(detect_conflicts(&sequence, &location, date))
 }
 
@@ -64,7 +63,7 @@ pub async fn calculate_parallel_etas(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    
+
     Ok(calculate_etas_parallel(&sequence, start))
 }
 
@@ -77,7 +76,7 @@ pub async fn get_target_schedule_info(
 ) -> Result<Vec<TargetScheduleInfo>, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     Ok(get_schedule_info(&sequence, &location, date))
 }
 
@@ -112,20 +111,41 @@ pub async fn split_sequence_by_target(
 #[command]
 pub async fn get_optimization_strategies() -> Result<Vec<(String, String, String)>, String> {
     Ok(vec![
-        ("max_altitude".to_string(), "Maximum Altitude".to_string(), 
-         "Order targets by their maximum altitude (highest first)".to_string()),
-        ("transit_time".to_string(), "Transit Time".to_string(), 
-         "Order targets by when they cross the meridian".to_string()),
-        ("visibility_start".to_string(), "Visibility Start".to_string(), 
-         "Order targets by when they become visible".to_string()),
-        ("visibility_duration".to_string(), "Visibility Duration".to_string(), 
-         "Order targets by how long they're visible (longest first)".to_string()),
-        ("minimize_slew".to_string(), "Minimize Slew".to_string(), 
-         "Order targets to minimize telescope movement".to_string()),
-        ("moon_avoidance".to_string(), "Moon Avoidance".to_string(), 
-         "Order targets by distance from the Moon".to_string()),
-        ("combined".to_string(), "Combined".to_string(), 
-         "Use a combined optimization score".to_string()),
+        (
+            "max_altitude".to_string(),
+            "Maximum Altitude".to_string(),
+            "Order targets by their maximum altitude (highest first)".to_string(),
+        ),
+        (
+            "transit_time".to_string(),
+            "Transit Time".to_string(),
+            "Order targets by when they cross the meridian".to_string(),
+        ),
+        (
+            "visibility_start".to_string(),
+            "Visibility Start".to_string(),
+            "Order targets by when they become visible".to_string(),
+        ),
+        (
+            "visibility_duration".to_string(),
+            "Visibility Duration".to_string(),
+            "Order targets by how long they're visible (longest first)".to_string(),
+        ),
+        (
+            "minimize_slew".to_string(),
+            "Minimize Slew".to_string(),
+            "Order targets to minimize telescope movement".to_string(),
+        ),
+        (
+            "moon_avoidance".to_string(),
+            "Moon Avoidance".to_string(),
+            "Order targets by distance from the Moon".to_string(),
+        ),
+        (
+            "combined".to_string(),
+            "Combined".to_string(),
+            "Use a combined optimization score".to_string(),
+        ),
     ])
 }
 
@@ -139,8 +159,13 @@ pub async fn batch_calculate_visibility(
 ) -> Result<Vec<(String, crate::services::astronomy::VisibilityWindow)>, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
-    Ok(calculate_visibility_parallel(&sequence.targets, &location, date, min_altitude))
+
+    Ok(calculate_visibility_parallel(
+        &sequence.targets,
+        &location,
+        date,
+        min_altitude,
+    ))
 }
 
 /// Validate sequence for a specific date
@@ -152,28 +177,32 @@ pub async fn validate_sequence_for_date(
 ) -> Result<ValidationReport, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     let conflicts = detect_conflicts(&sequence, &location, date);
     let schedule_info = get_schedule_info(&sequence, &location, date);
-    
-    let visible_count = schedule_info.iter()
+
+    let visible_count = schedule_info
+        .iter()
         .filter(|i| i.visibility_window.is_visible)
         .count();
-    
-    let total_runtime: f64 = schedule_info.iter()
+
+    let total_runtime: f64 = schedule_info
+        .iter()
         .filter(|i| i.visibility_window.is_visible)
         .map(|i| i.visibility_window.duration_hours)
         .sum();
-    
+
     let avg_quality: f64 = if visible_count > 0 {
-        schedule_info.iter()
+        schedule_info
+            .iter()
             .filter(|i| i.visibility_window.is_visible)
             .map(|i| i.quality_score)
-            .sum::<f64>() / visible_count as f64
+            .sum::<f64>()
+            / visible_count as f64
     } else {
         0.0
     };
-    
+
     Ok(ValidationReport {
         date: date.format("%Y-%m-%d").to_string(),
         total_targets: sequence.targets.len(),
@@ -212,37 +241,38 @@ pub async fn find_best_observation_date(
         .map_err(|e| format!("Invalid start date: {}", e))?;
     let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid end date: {}", e))?;
-    
+
     if end < start {
         return Err("End date must be after start date".to_string());
     }
-    
+
     let mut best_date = start;
     let mut best_score = 0.0;
     let mut date_scores = Vec::new();
-    
+
     let mut current = start;
     while current <= end {
         let schedule_info = get_schedule_info(&sequence, &location, current);
-        
-        let score: f64 = schedule_info.iter()
+
+        let score: f64 = schedule_info
+            .iter()
             .filter(|i| i.visibility_window.is_visible)
             .map(|i| i.quality_score + i.visibility_window.duration_hours * 5.0)
             .sum();
-        
+
         date_scores.push((current.format("%Y-%m-%d").to_string(), score));
-        
+
         if score > best_score {
             best_score = score;
             best_date = current;
         }
-        
+
         current = current.succ_opt().unwrap_or(current);
         if current == end && current != start {
             break;
         }
     }
-    
+
     Ok(BestDateResult {
         best_date: best_date.format("%Y-%m-%d").to_string(),
         best_score,
@@ -269,23 +299,25 @@ pub async fn estimate_session_time(
 ) -> Result<SessionTimeEstimate, String> {
     let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(|e| format!("Invalid date format: {}", e))?;
-    
+
     let download_time = sequence.estimated_download_time;
-    
+
     // Calculate imaging time
-    let imaging_time: f64 = sequence.targets.iter()
+    let imaging_time: f64 = sequence
+        .targets
+        .iter()
         .map(|t| t.runtime(download_time))
         .sum();
-    
+
     // Estimate slew time
     let slew_time = if include_slew_time && sequence.targets.len() > 1 {
         let slew_speed = 3.0; // degrees per second
         let settle_time = 5.0;
-        
+
         let mut total_slew = 0.0;
         for i in 1..sequence.targets.len() {
             let dist = crate::models::coordinates::angular_separation(
-                &sequence.targets[i-1].coordinates,
+                &sequence.targets[i - 1].coordinates,
                 &sequence.targets[i].coordinates,
             );
             total_slew += dist / slew_speed + settle_time;
@@ -294,19 +326,21 @@ pub async fn estimate_session_time(
     } else {
         0.0
     };
-    
+
     // Estimate autofocus time
-    let autofocus_time: f64 = sequence.targets.iter()
+    let autofocus_time: f64 = sequence
+        .targets
+        .iter()
         .filter(|t| t.auto_focus_on_start)
-        .count() as f64 * 120.0; // 2 minutes per autofocus
-    
+        .count() as f64
+        * 120.0; // 2 minutes per autofocus
+
     // Estimate centering time
-    let centering_time: f64 = sequence.targets.iter()
-        .filter(|t| t.center_target)
-        .count() as f64 * 60.0; // 1 minute per center
-    
+    let centering_time: f64 =
+        sequence.targets.iter().filter(|t| t.center_target).count() as f64 * 60.0; // 1 minute per center
+
     let total_time = imaging_time + slew_time + autofocus_time + centering_time;
-    
+
     // Get twilight info
     let twilight = crate::services::astronomy::calculate_twilight(&location, date);
     let available_time = match (twilight.astronomical_dusk, twilight.astronomical_dawn) {
@@ -316,7 +350,7 @@ pub async fn estimate_session_time(
         }
         _ => 0.0,
     };
-    
+
     Ok(SessionTimeEstimate {
         imaging_time_seconds: imaging_time,
         slew_time_seconds: slew_time,

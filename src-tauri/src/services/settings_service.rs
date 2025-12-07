@@ -1,18 +1,17 @@
 //! Application settings service
 
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use std::path::PathBuf;
 use std::sync::Arc;
-use parking_lot::RwLock;
-use once_cell::sync::Lazy;
 use tokio::fs;
 
 use crate::models::AppSettings;
 use crate::services::file_service;
 
 /// Global settings instance
-static SETTINGS: Lazy<Arc<RwLock<AppSettings>>> = Lazy::new(|| {
-    Arc::new(RwLock::new(AppSettings::default()))
-});
+static SETTINGS: Lazy<Arc<RwLock<AppSettings>>> =
+    Lazy::new(|| Arc::new(RwLock::new(AppSettings::default())));
 
 /// Get settings file path
 fn get_settings_path() -> PathBuf {
@@ -22,47 +21,47 @@ fn get_settings_path() -> PathBuf {
 /// Load settings from file
 pub async fn load_settings() -> Result<AppSettings, String> {
     let path = get_settings_path();
-    
+
     if !path.exists() {
         let settings = AppSettings::default();
         save_settings(&settings).await?;
         return Ok(settings);
     }
-    
+
     let contents = fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read settings: {}", e))?;
-    
-    let settings: AppSettings = serde_json::from_str(&contents)
-        .map_err(|e| format!("Failed to parse settings: {}", e))?;
-    
+
+    let settings: AppSettings =
+        serde_json::from_str(&contents).map_err(|e| format!("Failed to parse settings: {}", e))?;
+
     // Update global instance
     *SETTINGS.write() = settings.clone();
-    
+
     Ok(settings)
 }
 
 /// Save settings to file
 pub async fn save_settings(settings: &AppSettings) -> Result<(), String> {
     let path = get_settings_path();
-    
+
     // Create parent directory if it doesn't exist
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .await
             .map_err(|e| format!("Failed to create settings directory: {}", e))?;
     }
-    
+
     let contents = serde_json::to_string_pretty(settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
-    
+
     fs::write(&path, contents)
         .await
         .map_err(|e| format!("Failed to write settings: {}", e))?;
-    
+
     // Update global instance
     *SETTINGS.write() = settings.clone();
-    
+
     Ok(())
 }
 
@@ -91,7 +90,8 @@ pub async fn add_recent_file(path: &str) -> Result<(), String> {
         settings.recent_files.insert(0, path.to_string());
         // Trim to max size
         settings.recent_files.truncate(settings.max_recent_files);
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -99,7 +99,8 @@ pub async fn add_recent_file(path: &str) -> Result<(), String> {
 pub async fn remove_recent_file(path: &str) -> Result<(), String> {
     update_settings(|settings| {
         settings.recent_files.retain(|p| p != path);
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -107,7 +108,8 @@ pub async fn remove_recent_file(path: &str) -> Result<(), String> {
 pub async fn clear_recent_files() -> Result<(), String> {
     update_settings(|settings| {
         settings.recent_files.clear();
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -120,7 +122,8 @@ pub fn get_recent_files() -> Vec<String> {
 pub async fn set_last_directory(path: &str) -> Result<(), String> {
     update_settings(|settings| {
         settings.last_directory = Some(path.to_string());
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -143,7 +146,8 @@ pub async fn save_window_state(
         settings.window_x = x;
         settings.window_y = y;
         settings.window_maximized = maximized;
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -163,7 +167,8 @@ pub fn get_window_state() -> (Option<u32>, Option<u32>, Option<i32>, Option<i32>
 pub async fn set_theme(theme: &str) -> Result<(), String> {
     update_settings(|settings| {
         settings.theme = theme.to_string();
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -176,7 +181,8 @@ pub fn get_theme() -> String {
 pub async fn set_language(language: &str) -> Result<(), String> {
     update_settings(|settings| {
         settings.language = language.to_string();
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -189,7 +195,8 @@ pub fn get_language() -> String {
 pub async fn set_estimated_download_time(seconds: f64) -> Result<(), String> {
     update_settings(|settings| {
         settings.estimated_download_time = seconds;
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 

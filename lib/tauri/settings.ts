@@ -2,7 +2,7 @@
  * Settings operations with Tauri/browser fallback
  */
 
-import { isTauri, invoke } from './platform';
+import { isTauri, invoke } from "./platform";
 
 export interface AppSettings {
   lastDirectory?: string;
@@ -28,7 +28,7 @@ export interface WindowState {
   maximized: boolean;
 }
 
-const SETTINGS_KEY = 'cobalt-task-editor-settings';
+const SETTINGS_KEY = "cobalt-task-editor-settings";
 
 /**
  * Get default settings
@@ -42,8 +42,8 @@ function getDefaultSettings(): AppSettings {
     windowWidth: 1280,
     windowHeight: 800,
     windowMaximized: false,
-    theme: 'system',
-    language: 'en',
+    theme: "system",
+    language: "en",
     estimatedDownloadTime: 5,
   };
 }
@@ -53,9 +53,9 @@ function getDefaultSettings(): AppSettings {
  */
 export async function loadSettings(): Promise<AppSettings> {
   if (isTauri()) {
-    return invoke<AppSettings>('load_settings');
+    return invoke<AppSettings>("load_settings");
   }
-  
+
   // Browser fallback - use localStorage
   const stored = localStorage.getItem(SETTINGS_KEY);
   if (stored) {
@@ -73,9 +73,9 @@ export async function loadSettings(): Promise<AppSettings> {
  */
 export async function saveSettings(settings: AppSettings): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('save_settings', { settings });
+    return invoke<void>("save_settings", { settings });
   }
-  
+
   // Browser fallback
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
@@ -85,7 +85,7 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
  */
 export async function getSettings(): Promise<AppSettings> {
   if (isTauri()) {
-    return invoke<AppSettings>('get_settings');
+    return invoke<AppSettings>("get_settings");
   }
   return loadSettings();
 }
@@ -95,9 +95,9 @@ export async function getSettings(): Promise<AppSettings> {
  */
 export async function getRecentFiles(): Promise<string[]> {
   if (isTauri()) {
-    return invoke<string[]>('get_recent_files');
+    return invoke<string[]>("get_recent_files");
   }
-  
+
   const settings = await loadSettings();
   return settings.recentFiles;
 }
@@ -107,11 +107,11 @@ export async function getRecentFiles(): Promise<string[]> {
  */
 export async function addRecentFile(path: string): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('add_recent_file', { path });
+    return invoke<void>("add_recent_file", { path });
   }
-  
+
   const settings = await loadSettings();
-  settings.recentFiles = settings.recentFiles.filter(p => p !== path);
+  settings.recentFiles = settings.recentFiles.filter((p) => p !== path);
   settings.recentFiles.unshift(path);
   settings.recentFiles = settings.recentFiles.slice(0, settings.maxRecentFiles);
   await saveSettings(settings);
@@ -122,11 +122,11 @@ export async function addRecentFile(path: string): Promise<void> {
  */
 export async function removeRecentFile(path: string): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('remove_recent_file', { path });
+    return invoke<void>("remove_recent_file", { path });
   }
-  
+
   const settings = await loadSettings();
-  settings.recentFiles = settings.recentFiles.filter(p => p !== path);
+  settings.recentFiles = settings.recentFiles.filter((p) => p !== path);
   await saveSettings(settings);
 }
 
@@ -135,9 +135,9 @@ export async function removeRecentFile(path: string): Promise<void> {
  */
 export async function clearRecentFiles(): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('clear_recent_files');
+    return invoke<void>("clear_recent_files");
   }
-  
+
   const settings = await loadSettings();
   settings.recentFiles = [];
   await saveSettings(settings);
@@ -148,9 +148,9 @@ export async function clearRecentFiles(): Promise<void> {
  */
 export async function getLastDirectory(): Promise<string | null> {
   if (isTauri()) {
-    return invoke<string | null>('get_last_directory');
+    return invoke<string | null>("get_last_directory");
   }
-  
+
   const settings = await loadSettings();
   return settings.lastDirectory || null;
 }
@@ -160,9 +160,9 @@ export async function getLastDirectory(): Promise<string | null> {
  */
 export async function setLastDirectory(path: string): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('set_last_directory', { path });
+    return invoke<void>("set_last_directory", { path });
   }
-  
+
   const settings = await loadSettings();
   settings.lastDirectory = path;
   await saveSettings(settings);
@@ -176,12 +176,18 @@ export async function saveWindowState(
   height: number,
   x?: number,
   y?: number,
-  maximized: boolean = false
+  maximized: boolean = false,
 ): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('save_window_state', { width, height, x, y, maximized });
+    return invoke<void>("save_window_state", {
+      width,
+      height,
+      x,
+      y,
+      maximized,
+    });
   }
-  
+
   const settings = await loadSettings();
   settings.windowWidth = width;
   settings.windowHeight = height;
@@ -196,9 +202,9 @@ export async function saveWindowState(
  */
 export async function getWindowState(): Promise<WindowState> {
   if (isTauri()) {
-    return invoke<WindowState>('get_window_state');
+    return invoke<WindowState>("get_window_state");
   }
-  
+
   const settings = await loadSettings();
   return {
     width: settings.windowWidth,
@@ -214,9 +220,9 @@ export async function getWindowState(): Promise<WindowState> {
  */
 export async function setTheme(theme: string): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('set_theme', { theme });
+    return invoke<void>("set_theme", { theme });
   }
-  
+
   const settings = await loadSettings();
   settings.theme = theme;
   await saveSettings(settings);
@@ -227,9 +233,9 @@ export async function setTheme(theme: string): Promise<void> {
  */
 export async function getTheme(): Promise<string> {
   if (isTauri()) {
-    return invoke<string>('get_theme');
+    return invoke<string>("get_theme");
   }
-  
+
   const settings = await loadSettings();
   return settings.theme;
 }
@@ -239,9 +245,9 @@ export async function getTheme(): Promise<string> {
  */
 export async function setLanguage(language: string): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('set_language', { language });
+    return invoke<void>("set_language", { language });
   }
-  
+
   const settings = await loadSettings();
   settings.language = language;
   await saveSettings(settings);
@@ -252,9 +258,9 @@ export async function setLanguage(language: string): Promise<void> {
  */
 export async function getLanguage(): Promise<string> {
   if (isTauri()) {
-    return invoke<string>('get_language');
+    return invoke<string>("get_language");
   }
-  
+
   const settings = await loadSettings();
   return settings.language;
 }
@@ -264,9 +270,9 @@ export async function getLanguage(): Promise<string> {
  */
 export async function setEstimatedDownloadTime(seconds: number): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('set_estimated_download_time', { seconds });
+    return invoke<void>("set_estimated_download_time", { seconds });
   }
-  
+
   const settings = await loadSettings();
   settings.estimatedDownloadTime = seconds;
   await saveSettings(settings);
@@ -277,9 +283,9 @@ export async function setEstimatedDownloadTime(seconds: number): Promise<void> {
  */
 export async function getEstimatedDownloadTime(): Promise<number> {
   if (isTauri()) {
-    return invoke<number>('get_estimated_download_time');
+    return invoke<number>("get_estimated_download_time");
   }
-  
+
   const settings = await loadSettings();
   return settings.estimatedDownloadTime;
 }

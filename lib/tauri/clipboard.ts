@@ -2,18 +2,21 @@
  * Clipboard operations with Tauri/browser fallback
  */
 
-import { isTauri, invoke } from './platform';
-import type { SimpleTarget, SimpleExposure } from '../nina/simple-sequence-types';
+import { isTauri, invoke } from "./platform";
+import type {
+  SimpleTarget,
+  SimpleExposure,
+} from "../nina/simple-sequence-types";
 
 /**
  * Copy target to internal clipboard
  */
 export async function copyTarget(target: SimpleTarget): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('copy_target', { target });
+    return invoke<void>("copy_target", { target });
   }
   // Browser fallback - use localStorage
-  localStorage.setItem('clipboard-target', JSON.stringify(target));
+  localStorage.setItem("clipboard-target", JSON.stringify(target));
 }
 
 /**
@@ -21,9 +24,9 @@ export async function copyTarget(target: SimpleTarget): Promise<void> {
  */
 export async function copyTargets(targets: SimpleTarget[]): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('copy_targets', { targets });
+    return invoke<void>("copy_targets", { targets });
   }
-  localStorage.setItem('clipboard-targets', JSON.stringify(targets));
+  localStorage.setItem("clipboard-targets", JSON.stringify(targets));
 }
 
 /**
@@ -31,19 +34,21 @@ export async function copyTargets(targets: SimpleTarget[]): Promise<void> {
  */
 export async function copyExposure(exposure: SimpleExposure): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('copy_exposure', { exposure });
+    return invoke<void>("copy_exposure", { exposure });
   }
-  localStorage.setItem('clipboard-exposure', JSON.stringify(exposure));
+  localStorage.setItem("clipboard-exposure", JSON.stringify(exposure));
 }
 
 /**
  * Copy multiple exposures to internal clipboard
  */
-export async function copyExposures(exposures: SimpleExposure[]): Promise<void> {
+export async function copyExposures(
+  exposures: SimpleExposure[],
+): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('copy_exposures', { exposures });
+    return invoke<void>("copy_exposures", { exposures });
   }
-  localStorage.setItem('clipboard-exposures', JSON.stringify(exposures));
+  localStorage.setItem("clipboard-exposures", JSON.stringify(exposures));
 }
 
 /**
@@ -51,12 +56,12 @@ export async function copyExposures(exposures: SimpleExposure[]): Promise<void> 
  */
 export async function pasteTarget(): Promise<SimpleTarget | null> {
   if (isTauri()) {
-    return invoke<SimpleTarget | null>('paste_target');
+    return invoke<SimpleTarget | null>("paste_target");
   }
-  
-  const data = localStorage.getItem('clipboard-target');
+
+  const data = localStorage.getItem("clipboard-target");
   if (!data) return null;
-  
+
   try {
     const target = JSON.parse(data) as SimpleTarget;
     // Generate new ID
@@ -74,12 +79,14 @@ export async function pasteTarget(): Promise<SimpleTarget | null> {
  */
 export async function pasteTargets(): Promise<SimpleTarget[] | null> {
   if (isTauri()) {
-    return invoke<SimpleTarget[] | null>('paste_targets');
+    return invoke<SimpleTarget[] | null>("paste_targets");
   }
-  
-  const data = localStorage.getItem('clipboard-targets') || localStorage.getItem('clipboard-target');
+
+  const data =
+    localStorage.getItem("clipboard-targets") ||
+    localStorage.getItem("clipboard-target");
   if (!data) return null;
-  
+
   try {
     const parsed = JSON.parse(data);
     const targets = Array.isArray(parsed) ? parsed : [parsed];
@@ -99,12 +106,12 @@ export async function pasteTargets(): Promise<SimpleTarget[] | null> {
  */
 export async function pasteExposure(): Promise<SimpleExposure | null> {
   if (isTauri()) {
-    return invoke<SimpleExposure | null>('paste_exposure');
+    return invoke<SimpleExposure | null>("paste_exposure");
   }
-  
-  const data = localStorage.getItem('clipboard-exposure');
+
+  const data = localStorage.getItem("clipboard-exposure");
   if (!data) return null;
-  
+
   try {
     const exposure = JSON.parse(data) as SimpleExposure;
     exposure.id = crypto.randomUUID();
@@ -120,12 +127,14 @@ export async function pasteExposure(): Promise<SimpleExposure | null> {
  */
 export async function pasteExposures(): Promise<SimpleExposure[] | null> {
   if (isTauri()) {
-    return invoke<SimpleExposure[] | null>('paste_exposures');
+    return invoke<SimpleExposure[] | null>("paste_exposures");
   }
-  
-  const data = localStorage.getItem('clipboard-exposures') || localStorage.getItem('clipboard-exposure');
+
+  const data =
+    localStorage.getItem("clipboard-exposures") ||
+    localStorage.getItem("clipboard-exposure");
   if (!data) return null;
-  
+
   try {
     const parsed = JSON.parse(data);
     const exposures = Array.isArray(parsed) ? parsed : [parsed];
@@ -144,22 +153,24 @@ export async function pasteExposures(): Promise<SimpleExposure[] | null> {
  */
 export async function hasClipboardContent(): Promise<boolean> {
   if (isTauri()) {
-    return invoke<boolean>('has_clipboard_content');
+    return invoke<boolean>("has_clipboard_content");
   }
   return !!(
-    localStorage.getItem('clipboard-target') ||
-    localStorage.getItem('clipboard-targets') ||
-    localStorage.getItem('clipboard-exposure') ||
-    localStorage.getItem('clipboard-exposures')
+    localStorage.getItem("clipboard-target") ||
+    localStorage.getItem("clipboard-targets") ||
+    localStorage.getItem("clipboard-exposure") ||
+    localStorage.getItem("clipboard-exposures")
   );
 }
 
 /**
  * Check if clipboard has specific content type
  */
-export async function hasClipboardContentType(contentType: string): Promise<boolean> {
+export async function hasClipboardContentType(
+  contentType: string,
+): Promise<boolean> {
   if (isTauri()) {
-    return invoke<boolean>('has_clipboard_content_type', { contentType });
+    return invoke<boolean>("has_clipboard_content_type", { contentType });
   }
   return !!localStorage.getItem(`clipboard-${contentType}`);
 }
@@ -169,12 +180,12 @@ export async function hasClipboardContentType(contentType: string): Promise<bool
  */
 export async function clearClipboard(): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('clear_clipboard');
+    return invoke<void>("clear_clipboard");
   }
-  localStorage.removeItem('clipboard-target');
-  localStorage.removeItem('clipboard-targets');
-  localStorage.removeItem('clipboard-exposure');
-  localStorage.removeItem('clipboard-exposures');
+  localStorage.removeItem("clipboard-target");
+  localStorage.removeItem("clipboard-targets");
+  localStorage.removeItem("clipboard-exposure");
+  localStorage.removeItem("clipboard-exposures");
 }
 
 /**
@@ -183,14 +194,14 @@ export async function clearClipboard(): Promise<void> {
 export async function copyToSystemClipboard(text: string): Promise<void> {
   if (isTauri()) {
     try {
-      const clipboard = await import('@tauri-apps/plugin-clipboard-manager');
+      const clipboard = await import("@tauri-apps/plugin-clipboard-manager");
       await clipboard.writeText(text);
       return;
     } catch (e) {
-      console.error('Failed to copy to system clipboard:', e);
+      console.error("Failed to copy to system clipboard:", e);
     }
   }
-  
+
   // Browser fallback
   await navigator.clipboard.writeText(text);
 }
@@ -201,14 +212,14 @@ export async function copyToSystemClipboard(text: string): Promise<void> {
 export async function readFromSystemClipboard(): Promise<string | null> {
   if (isTauri()) {
     try {
-      const clipboard = await import('@tauri-apps/plugin-clipboard-manager');
+      const clipboard = await import("@tauri-apps/plugin-clipboard-manager");
       return await clipboard.readText();
     } catch (e) {
-      console.error('Failed to read from system clipboard:', e);
+      console.error("Failed to read from system clipboard:", e);
       return null;
     }
   }
-  
+
   // Browser fallback
   try {
     return await navigator.clipboard.readText();

@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod tests {
     use super::super::export_service::*;
-    use crate::models::{SimpleSequence, SimpleTarget, SimpleExposure, Coordinates};
-    use crate::models::common::{SequenceEntityStatus, SequenceMode, ImageType, BinningMode};
+    use crate::models::common::{BinningMode, ImageType, SequenceEntityStatus, SequenceMode};
+    use crate::models::{Coordinates, SimpleExposure, SimpleSequence, SimpleTarget};
 
     fn create_test_sequence() -> SimpleSequence {
         let mut seq = SimpleSequence::new("Test Sequence".to_string());
@@ -17,8 +17,12 @@ mod tests {
 
     fn create_test_target(
         name: &str,
-        ra_h: i32, ra_m: i32, ra_s: f64,
-        dec_d: i32, dec_m: i32, dec_s: f64,
+        ra_h: i32,
+        ra_m: i32,
+        ra_s: f64,
+        dec_d: i32,
+        dec_m: i32,
+        dec_s: f64,
         neg_dec: bool,
     ) -> SimpleTarget {
         SimpleTarget {
@@ -79,9 +83,9 @@ mod tests {
     fn test_export_to_csv_basic() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let result = export_to_csv(&seq, &options);
-        
+
         assert!(result.success);
         assert!(result.content.contains("Name,RA,Dec"));
         assert!(result.content.contains("M31"));
@@ -96,9 +100,9 @@ mod tests {
             include_exposures: true,
             ..Default::default()
         };
-        
+
         let result = export_to_csv(&seq, &options);
-        
+
         assert!(result.success);
         assert!(result.content.contains("Exposure Time"));
         assert!(result.content.contains("60.0"));
@@ -111,9 +115,9 @@ mod tests {
             include_exposures: false,
             ..Default::default()
         };
-        
+
         let result = export_to_csv(&seq, &options);
-        
+
         assert!(result.success);
         assert!(!result.content.contains("Exposure Time"));
     }
@@ -122,11 +126,13 @@ mod tests {
     fn test_export_to_telescopius_csv() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let result = export_to_telescopius_csv(&seq, &options);
-        
+
         assert!(result.success);
-        assert!(result.content.contains("Pane,Familiar Name,Catalogue Entry"));
+        assert!(result
+            .content
+            .contains("Pane,Familiar Name,Catalogue Entry"));
         assert!(result.content.contains("M31"));
     }
 
@@ -138,9 +144,9 @@ mod tests {
     fn test_export_to_xml_basic() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let result = export_to_xml(&seq, &options);
-        
+
         assert!(result.success);
         assert!(result.content.contains("<?xml"));
         assert!(result.content.contains("<Sequence>"));
@@ -155,9 +161,9 @@ mod tests {
             include_settings: true,
             ..Default::default()
         };
-        
+
         let result = export_to_xml(&seq, &options);
-        
+
         assert!(result.success);
         assert!(result.content.contains("<SlewToTarget>"));
         assert!(result.content.contains("<CenterTarget>"));
@@ -167,9 +173,9 @@ mod tests {
     fn test_export_to_apt_xml() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let result = export_to_apt_xml(&seq, &options);
-        
+
         assert!(result.success);
         assert!(result.content.contains("<AstroPhotographyTool"));
         assert!(result.content.contains("<ObjectList>"));
@@ -183,9 +189,9 @@ mod tests {
     fn test_export_to_stellarium() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let result = export_to_stellarium(&seq, &options);
-        
+
         assert!(result.success);
         assert!(result.content.contains("# Stellarium Skylist"));
         assert!(result.content.contains("M31"));
@@ -199,9 +205,9 @@ mod tests {
     fn test_export_to_voyager() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let result = export_to_voyager(&seq, &options);
-        
+
         assert!(result.success);
         assert!(result.content.contains("[M31]"));
         assert!(result.content.contains("RA="));
@@ -215,13 +221,13 @@ mod tests {
     #[test]
     fn test_export_to_json() {
         let seq = create_test_sequence();
-        
+
         let result = export_to_json(&seq);
-        
+
         assert!(result.success);
         assert!(result.content.contains("\"title\""));
         assert!(result.content.contains("\"targets\""));
-        
+
         // Should be valid JSON
         let parsed: Result<serde_json::Value, _> = serde_json::from_str(&result.content);
         assert!(parsed.is_ok());
@@ -234,11 +240,11 @@ mod tests {
     #[test]
     fn test_export_to_nina_target_set() {
         let seq = create_test_sequence();
-        
+
         let result = export_to_nina_target_set(&seq);
-        
+
         assert!(result.success);
-        
+
         // Should be valid JSON
         let parsed: Result<serde_json::Value, _> = serde_json::from_str(&result.content);
         assert!(parsed.is_ok());
@@ -252,7 +258,7 @@ mod tests {
     fn test_format_ra_sexagesimal() {
         let coords = Coordinates::new(12, 30, 45.5, 0, 0, 0.0, false);
         let formatted = format_ra(&coords, CoordinateFormat::Sexagesimal, 1);
-        
+
         assert!(formatted.contains("12h"));
         assert!(formatted.contains("30m"));
         assert!(formatted.contains("45.5s"));
@@ -262,7 +268,7 @@ mod tests {
     fn test_format_ra_colon() {
         let coords = Coordinates::new(12, 30, 45.5, 0, 0, 0.0, false);
         let formatted = format_ra(&coords, CoordinateFormat::SexagesimalColon, 1);
-        
+
         assert!(formatted.contains("12:30:"));
     }
 
@@ -270,7 +276,7 @@ mod tests {
     fn test_format_ra_decimal() {
         let coords = Coordinates::new(12, 30, 0.0, 0, 0, 0.0, false);
         let formatted = format_ra(&coords, CoordinateFormat::Decimal, 2);
-        
+
         let value: f64 = formatted.parse().unwrap();
         assert!((value - 12.5).abs() < 0.01);
     }
@@ -279,7 +285,7 @@ mod tests {
     fn test_format_dec_positive() {
         let coords = Coordinates::new(0, 0, 0.0, 45, 30, 0.0, false);
         let formatted = format_dec(&coords, CoordinateFormat::Sexagesimal, 1);
-        
+
         assert!(formatted.starts_with('+'));
         assert!(formatted.contains("45°"));
     }
@@ -288,7 +294,7 @@ mod tests {
     fn test_format_dec_negative() {
         let coords = Coordinates::new(0, 0, 0.0, 45, 30, 0.0, true);
         let formatted = format_dec(&coords, CoordinateFormat::Sexagesimal, 1);
-        
+
         assert!(formatted.starts_with('-'));
     }
 
@@ -303,9 +309,9 @@ mod tests {
             format: ExportFormat::Csv,
             ..Default::default()
         };
-        
+
         let result = export_sequence(&seq, &options);
-        
+
         assert!(result.success);
         assert_eq!(result.format, "CSV");
     }
@@ -317,9 +323,9 @@ mod tests {
             format: ExportFormat::Xml,
             ..Default::default()
         };
-        
+
         let result = export_sequence(&seq, &options);
-        
+
         assert!(result.success);
         assert_eq!(result.format, "XML");
     }
@@ -331,9 +337,9 @@ mod tests {
             format: ExportFormat::Json,
             ..Default::default()
         };
-        
+
         let result = export_sequence(&seq, &options);
-        
+
         assert!(result.success);
         assert_eq!(result.format, "JSON");
     }
@@ -346,9 +352,9 @@ mod tests {
     fn test_generate_csv_content() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let content = generate_csv_content(&seq.targets, &options);
-        
+
         assert!(content.contains("Name,RA,Dec"));
         assert!(content.contains("M31"));
     }
@@ -357,9 +363,9 @@ mod tests {
     fn test_generate_xml_content() {
         let seq = create_test_sequence();
         let options = ExportOptions::default();
-        
+
         let content = generate_xml_content(&seq.targets, &options);
-        
+
         assert!(content.contains("<?xml"));
         assert!(content.contains("<Targets>"));
     }
@@ -373,9 +379,9 @@ mod tests {
         let mut seq = SimpleSequence::new("Empty".to_string());
         seq.targets.clear();
         let options = ExportOptions::default();
-        
+
         let result = export_to_csv(&seq, &options);
-        
+
         assert!(result.success);
         assert_eq!(result.target_count, 0);
     }
@@ -385,9 +391,9 @@ mod tests {
         let mut seq = create_test_sequence();
         seq.targets[0].target_name = "Test, \"with\" special".to_string();
         let options = ExportOptions::default();
-        
+
         let result = export_to_csv(&seq, &options);
-        
+
         assert!(result.success);
         // Should be properly escaped
         assert!(result.content.contains("\"Test, \"\"with\"\" special\""));

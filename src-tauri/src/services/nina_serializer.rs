@@ -1,12 +1,12 @@
 //! NINA sequence format serializer
-//! 
+//!
 //! Handles conversion between editor format and NINA JSON format
 
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use crate::models::{EditorSequence, EditorSequenceItem, EditorCondition, EditorTrigger};
+use crate::models::{EditorCondition, EditorSequence, EditorSequenceItem, EditorTrigger};
 
 static NINA_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -23,9 +23,9 @@ fn next_nina_id() -> String {
 /// Export editor sequence to NINA JSON format
 pub fn export_to_nina(sequence: &EditorSequence) -> Result<String, String> {
     reset_nina_ids();
-    
+
     let root_id = next_nina_id();
-    
+
     // Create area containers
     let start_container = create_area_container(
         &sequence.start_items,
@@ -33,21 +33,21 @@ pub fn export_to_nina(sequence: &EditorSequence) -> Result<String, String> {
         "NINA.Sequencer.Container.StartAreaContainer, NINA.Sequencer",
         &root_id,
     );
-    
+
     let target_container = create_area_container(
         &sequence.target_items,
         "Target Area",
         "NINA.Sequencer.Container.TargetAreaContainer, NINA.Sequencer",
         &root_id,
     );
-    
+
     let end_container = create_area_container(
         &sequence.end_items,
         "End Area",
         "NINA.Sequencer.Container.EndAreaContainer, NINA.Sequencer",
         &root_id,
     );
-    
+
     // Create root container
     let root = json!({
         "$id": root_id,
@@ -71,9 +71,8 @@ pub fn export_to_nina(sequence: &EditorSequence) -> Result<String, String> {
         "Triggers": create_triggers_collection(&sequence.global_triggers, &root_id),
         "Parent": null
     });
-    
-    serde_json::to_string_pretty(&root)
-        .map_err(|e| format!("Failed to serialize NINA JSON: {}", e))
+
+    serde_json::to_string_pretty(&root).map_err(|e| format!("Failed to serialize NINA JSON: {}", e))
 }
 
 /// Create area container
@@ -84,7 +83,7 @@ fn create_area_container(
     parent_id: &str,
 ) -> Value {
     let container_id = next_nina_id();
-    
+
     json!({
         "$id": container_id,
         "$type": type_name,
@@ -117,10 +116,10 @@ fn create_area_container(
 /// Create NINA item from editor item
 fn create_nina_item(item: &EditorSequenceItem, parent_id: &str) -> Value {
     let item_id = next_nina_id();
-    let is_container = item.item_type.contains("Container") 
+    let is_container = item.item_type.contains("Container")
         || item.item_type.contains("SmartExposure")
         || item.item_type.contains("InstructionSet");
-    
+
     let mut nina_item = json!({
         "$id": item_id,
         "$type": item.item_type,
@@ -129,7 +128,7 @@ fn create_nina_item(item: &EditorSequenceItem, parent_id: &str) -> Value {
             "$ref": parent_id
         }
     });
-    
+
     // Add data fields
     if let Some(obj) = nina_item.as_object_mut() {
         for (key, value) in &item.data {
@@ -138,42 +137,66 @@ fn create_nina_item(item: &EditorSequenceItem, parent_id: &str) -> Value {
             obj.insert(pascal_key, value.clone());
         }
     }
-    
+
     // Add container-specific fields
     if is_container {
         if let Some(obj) = nina_item.as_object_mut() {
             obj.insert("Strategy".to_string(), json!({
                 "$type": "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer"
             }));
-            obj.insert("IsExpanded".to_string(), json!(item.is_expanded.unwrap_or(true)));
-            
+            obj.insert(
+                "IsExpanded".to_string(),
+                json!(item.is_expanded.unwrap_or(true)),
+            );
+
             // Add nested items
-            let nested_items = item.items.as_ref().map(|items| {
-                items.iter().map(|i| create_nina_item(i, &item_id)).collect::<Vec<_>>()
-            }).unwrap_or_default();
-            
+            let nested_items = item
+                .items
+                .as_ref()
+                .map(|items| {
+                    items
+                        .iter()
+                        .map(|i| create_nina_item(i, &item_id))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+
             obj.insert("Items".to_string(), json!({
                 "$id": next_nina_id(),
                 "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
                 "$values": nested_items
             }));
-            
+
             // Add conditions
-            let conditions = item.conditions.as_ref().map(|conds| {
-                conds.iter().map(|c| create_nina_condition(c, &item_id)).collect::<Vec<_>>()
-            }).unwrap_or_default();
-            
+            let conditions = item
+                .conditions
+                .as_ref()
+                .map(|conds| {
+                    conds
+                        .iter()
+                        .map(|c| create_nina_condition(c, &item_id))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+
             obj.insert("Conditions".to_string(), json!({
                 "$id": next_nina_id(),
                 "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
                 "$values": conditions
             }));
-            
+
             // Add triggers
-            let triggers = item.triggers.as_ref().map(|trigs| {
-                trigs.iter().map(|t| create_nina_trigger(t, &item_id)).collect::<Vec<_>>()
-            }).unwrap_or_default();
-            
+            let triggers = item
+                .triggers
+                .as_ref()
+                .map(|trigs| {
+                    trigs
+                        .iter()
+                        .map(|t| create_nina_trigger(t, &item_id))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+
             obj.insert("Triggers".to_string(), json!({
                 "$id": next_nina_id(),
                 "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
@@ -181,14 +204,14 @@ fn create_nina_item(item: &EditorSequenceItem, parent_id: &str) -> Value {
             }));
         }
     }
-    
+
     nina_item
 }
 
 /// Create NINA condition
 fn create_nina_condition(condition: &EditorCondition, parent_id: &str) -> Value {
     let condition_id = next_nina_id();
-    
+
     let mut nina_condition = json!({
         "$id": condition_id,
         "$type": condition.condition_type,
@@ -197,7 +220,7 @@ fn create_nina_condition(condition: &EditorCondition, parent_id: &str) -> Value 
             "$ref": parent_id
         }
     });
-    
+
     // Add data fields
     if let Some(obj) = nina_condition.as_object_mut() {
         for (key, value) in &condition.data {
@@ -205,14 +228,14 @@ fn create_nina_condition(condition: &EditorCondition, parent_id: &str) -> Value 
             obj.insert(pascal_key, value.clone());
         }
     }
-    
+
     nina_condition
 }
 
 /// Create NINA trigger
 fn create_nina_trigger(trigger: &EditorTrigger, parent_id: &str) -> Value {
     let trigger_id = next_nina_id();
-    
+
     let mut nina_trigger = json!({
         "$id": trigger_id,
         "$type": trigger.trigger_type,
@@ -221,7 +244,7 @@ fn create_nina_trigger(trigger: &EditorTrigger, parent_id: &str) -> Value {
             "$ref": parent_id
         }
     });
-    
+
     // Add data fields
     if let Some(obj) = nina_trigger.as_object_mut() {
         for (key, value) in &trigger.data {
@@ -229,7 +252,7 @@ fn create_nina_trigger(trigger: &EditorTrigger, parent_id: &str) -> Value {
             obj.insert(pascal_key, value.clone());
         }
     }
-    
+
     // Add trigger items if present
     if let Some(items) = &trigger.trigger_items {
         if let Some(obj) = nina_trigger.as_object_mut() {
@@ -237,7 +260,7 @@ fn create_nina_trigger(trigger: &EditorTrigger, parent_id: &str) -> Value {
                 .iter()
                 .map(|item| create_nina_item(item, &trigger_id))
                 .collect();
-            
+
             obj.insert("TriggerItems".to_string(), json!({
                 "$id": next_nina_id(),
                 "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
@@ -245,7 +268,7 @@ fn create_nina_trigger(trigger: &EditorTrigger, parent_id: &str) -> Value {
             }));
         }
     }
-    
+
     nina_trigger
 }
 
@@ -255,7 +278,7 @@ fn create_triggers_collection(triggers: &[EditorTrigger], parent_id: &str) -> Va
         .iter()
         .map(|t| create_nina_trigger(t, parent_id))
         .collect();
-    
+
     json!({
         "$id": next_nina_id(),
         "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
@@ -267,7 +290,7 @@ fn create_triggers_collection(triggers: &[EditorTrigger], parent_id: &str) -> Va
 fn to_pascal_case(s: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = true;
-    
+
     for c in s.chars() {
         if capitalize_next {
             result.push(c.to_ascii_uppercase());
@@ -276,20 +299,21 @@ fn to_pascal_case(s: &str) -> String {
             result.push(c);
         }
     }
-    
+
     result
 }
 
 /// Import NINA JSON to editor sequence
 pub fn import_from_nina(json_str: &str) -> Result<EditorSequence, String> {
-    let data: Value = serde_json::from_str(json_str)
-        .map_err(|e| format!("Failed to parse NINA JSON: {}", e))?;
-    
+    let data: Value =
+        serde_json::from_str(json_str).map_err(|e| format!("Failed to parse NINA JSON: {}", e))?;
+
     // Check if it's a root container or template
-    let type_str = data.get("$type")
+    let type_str = data
+        .get("$type")
         .and_then(|v| v.as_str())
         .ok_or("Missing $type field")?;
-    
+
     if type_str.contains("SequenceRootContainer") {
         import_root_container(&data)
     } else if type_str.contains("Container") {
@@ -301,25 +325,27 @@ pub fn import_from_nina(json_str: &str) -> Result<EditorSequence, String> {
 
 /// Import root container
 fn import_root_container(data: &Value) -> Result<EditorSequence, String> {
-    let title = data.get("SequenceTitle")
+    let title = data
+        .get("SequenceTitle")
         .or_else(|| data.get("Name"))
         .and_then(|v| v.as_str())
         .unwrap_or("Imported Sequence")
         .to_string();
-    
-    let items = data.get("Items")
+
+    let items = data
+        .get("Items")
         .and_then(|v| v.get("$values"))
         .and_then(|v| v.as_array())
         .ok_or("Missing Items array")?;
-    
+
     let mut start_items = Vec::new();
     let mut target_items = Vec::new();
     let mut end_items = Vec::new();
-    
+
     for item in items {
         let item_type = item.get("$type").and_then(|v| v.as_str()).unwrap_or("");
         let imported_items = import_container_items(item)?;
-        
+
         if item_type.contains("StartAreaContainer") {
             start_items = imported_items;
         } else if item_type.contains("TargetAreaContainer") {
@@ -328,14 +354,15 @@ fn import_root_container(data: &Value) -> Result<EditorSequence, String> {
             end_items = imported_items;
         }
     }
-    
+
     // Import global triggers
-    let global_triggers = data.get("Triggers")
+    let global_triggers = data
+        .get("Triggers")
         .and_then(|v| v.get("$values"))
         .and_then(|v| v.as_array())
         .map(|arr| arr.iter().filter_map(import_trigger).collect())
         .unwrap_or_default();
-    
+
     Ok(EditorSequence {
         id: uuid::Uuid::new_v4().to_string(),
         title,
@@ -348,13 +375,14 @@ fn import_root_container(data: &Value) -> Result<EditorSequence, String> {
 
 /// Import template (single container)
 fn import_template(data: &Value) -> Result<EditorSequence, String> {
-    let title = data.get("Name")
+    let title = data
+        .get("Name")
         .and_then(|v| v.as_str())
         .unwrap_or("Imported Template")
         .to_string();
-    
+
     let items = import_container_items(data)?;
-    
+
     Ok(EditorSequence {
         id: uuid::Uuid::new_v4().to_string(),
         title,
@@ -367,10 +395,11 @@ fn import_template(data: &Value) -> Result<EditorSequence, String> {
 
 /// Import container items
 fn import_container_items(container: &Value) -> Result<Vec<EditorSequenceItem>, String> {
-    let items = container.get("Items")
+    let items = container
+        .get("Items")
         .and_then(|v| v.get("$values"))
         .and_then(|v| v.as_array());
-    
+
     match items {
         Some(arr) => Ok(arr.iter().filter_map(import_item).collect()),
         None => Ok(Vec::new()),
@@ -380,19 +409,20 @@ fn import_container_items(container: &Value) -> Result<Vec<EditorSequenceItem>, 
 /// Import single item
 fn import_item(data: &Value) -> Option<EditorSequenceItem> {
     let item_type = data.get("$type")?.as_str()?.to_string();
-    let name = data.get("Name")
+    let name = data
+        .get("Name")
         .and_then(|v| v.as_str())
         .unwrap_or("Unknown")
         .to_string();
-    
+
     // Extract category from type
     let category = extract_category(&item_type);
-    
+
     // Check if container
-    let is_container = item_type.contains("Container") 
+    let is_container = item_type.contains("Container")
         || item_type.contains("SmartExposure")
         || item_type.contains("InstructionSet");
-    
+
     // Import nested items if container
     let items = if is_container {
         data.get("Items")
@@ -402,27 +432,34 @@ fn import_item(data: &Value) -> Option<EditorSequenceItem> {
     } else {
         None
     };
-    
+
     // Import conditions
-    let conditions = data.get("Conditions")
+    let conditions = data
+        .get("Conditions")
         .and_then(|v| v.get("$values"))
         .and_then(|v| v.as_array())
         .map(|arr| arr.iter().filter_map(import_condition).collect());
-    
+
     // Import triggers
-    let triggers = data.get("Triggers")
+    let triggers = data
+        .get("Triggers")
         .and_then(|v| v.get("$values"))
         .and_then(|v| v.as_array())
         .map(|arr| arr.iter().filter_map(import_trigger).collect());
-    
+
     // Extract data fields
     let mut item_data = HashMap::new();
     if let Some(obj) = data.as_object() {
         for (key, value) in obj {
             // Skip metadata fields
-            if key.starts_with('$') || key == "Parent" || key == "Items" 
-                || key == "Conditions" || key == "Triggers" || key == "Strategy"
-                || key == "Name" || key == "IsExpanded"
+            if key.starts_with('$')
+                || key == "Parent"
+                || key == "Items"
+                || key == "Conditions"
+                || key == "Triggers"
+                || key == "Strategy"
+                || key == "Name"
+                || key == "IsExpanded"
             {
                 continue;
             }
@@ -431,7 +468,7 @@ fn import_item(data: &Value) -> Option<EditorSequenceItem> {
             item_data.insert(camel_key, value.clone());
         }
     }
-    
+
     Some(EditorSequenceItem {
         id: uuid::Uuid::new_v4().to_string(),
         item_type,
@@ -451,13 +488,14 @@ fn import_item(data: &Value) -> Option<EditorSequenceItem> {
 /// Import condition
 fn import_condition(data: &Value) -> Option<EditorCondition> {
     let condition_type = data.get("$type")?.as_str()?.to_string();
-    let name = data.get("Name")
+    let name = data
+        .get("Name")
         .and_then(|v| v.as_str())
         .unwrap_or("Unknown")
         .to_string();
-    
+
     let category = extract_category(&condition_type);
-    
+
     let mut condition_data = HashMap::new();
     if let Some(obj) = data.as_object() {
         for (key, value) in obj {
@@ -468,7 +506,7 @@ fn import_condition(data: &Value) -> Option<EditorCondition> {
             condition_data.insert(camel_key, value.clone());
         }
     }
-    
+
     Some(EditorCondition {
         id: uuid::Uuid::new_v4().to_string(),
         condition_type,
@@ -482,13 +520,14 @@ fn import_condition(data: &Value) -> Option<EditorCondition> {
 /// Import trigger
 fn import_trigger(data: &Value) -> Option<EditorTrigger> {
     let trigger_type = data.get("$type")?.as_str()?.to_string();
-    let name = data.get("Name")
+    let name = data
+        .get("Name")
         .and_then(|v| v.as_str())
         .unwrap_or("Unknown")
         .to_string();
-    
+
     let category = extract_category(&trigger_type);
-    
+
     let mut trigger_data = HashMap::new();
     if let Some(obj) = data.as_object() {
         for (key, value) in obj {
@@ -499,13 +538,14 @@ fn import_trigger(data: &Value) -> Option<EditorTrigger> {
             trigger_data.insert(camel_key, value.clone());
         }
     }
-    
+
     // Import trigger items
-    let trigger_items = data.get("TriggerItems")
+    let trigger_items = data
+        .get("TriggerItems")
         .and_then(|v| v.get("$values"))
         .and_then(|v| v.as_array())
         .map(|arr| arr.iter().filter_map(import_item).collect());
-    
+
     Some(EditorTrigger {
         id: uuid::Uuid::new_v4().to_string(),
         trigger_type,
@@ -535,25 +575,25 @@ fn extract_category(type_str: &str) -> String {
 fn to_camel_case(s: &str) -> String {
     let mut result = String::new();
     let mut chars = s.chars();
-    
+
     if let Some(first) = chars.next() {
         result.push(first.to_ascii_lowercase());
     }
-    
+
     for c in chars {
         result.push(c);
     }
-    
+
     result
 }
 
 /// Validate NINA JSON format
 pub fn validate_nina_json(json_str: &str) -> Result<(), Vec<String>> {
-    let data: Value = serde_json::from_str(json_str)
-        .map_err(|e| vec![format!("Invalid JSON: {}", e)])?;
-    
+    let data: Value =
+        serde_json::from_str(json_str).map_err(|e| vec![format!("Invalid JSON: {}", e)])?;
+
     let mut errors = Vec::new();
-    
+
     // Check for $type field
     if data.get("$type").is_none() {
         errors.push("Missing $type field".to_string());
@@ -563,14 +603,14 @@ pub fn validate_nina_json(json_str: &str) -> Result<(), Vec<String>> {
             errors.push("Root element must be a container type".to_string());
         }
     }
-    
+
     // Check for Items
     if let Some(items) = data.get("Items") {
         if items.get("$values").is_none() {
             errors.push("Items collection missing $values array".to_string());
         }
     }
-    
+
     if errors.is_empty() {
         Ok(())
     } else {
@@ -588,22 +628,21 @@ mod tests {
         EditorSequence {
             id: "test".to_string(),
             title: "Test Sequence".to_string(),
-            start_items: vec![
-                EditorSequenceItem {
-                    id: "start1".to_string(),
-                    item_type: "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer".to_string(),
-                    name: "Cool Camera".to_string(),
-                    category: "Camera".to_string(),
-                    icon: None,
-                    description: None,
-                    status: SequenceEntityStatus::Created,
-                    is_expanded: None,
-                    data: HashMap::new(),
-                    items: None,
-                    conditions: None,
-                    triggers: None,
-                },
-            ],
+            start_items: vec![EditorSequenceItem {
+                id: "start1".to_string(),
+                item_type: "NINA.Sequencer.SequenceItem.Camera.CoolCamera, NINA.Sequencer"
+                    .to_string(),
+                name: "Cool Camera".to_string(),
+                category: "Camera".to_string(),
+                icon: None,
+                description: None,
+                status: SequenceEntityStatus::Created,
+                is_expanded: None,
+                data: HashMap::new(),
+                items: None,
+                conditions: None,
+                triggers: None,
+            }],
             target_items: vec![],
             end_items: vec![],
             global_triggers: vec![],
@@ -614,7 +653,7 @@ mod tests {
     fn test_export_to_nina() {
         let sequence = create_test_sequence();
         let json = export_to_nina(&sequence).unwrap();
-        
+
         assert!(json.contains("SequenceRootContainer"));
         assert!(json.contains("Test Sequence"));
         assert!(json.contains("CoolCamera"));
@@ -637,7 +676,7 @@ mod tests {
             "Conditions": { "$values": [] },
             "Triggers": { "$values": [] }
         }"#;
-        
+
         let sequence = import_from_nina(nina_json).unwrap();
         assert_eq!(sequence.title, "Test");
     }
@@ -647,7 +686,7 @@ mod tests {
         let original = create_test_sequence();
         let json = export_to_nina(&original).unwrap();
         let imported = import_from_nina(&json).unwrap();
-        
+
         assert_eq!(imported.title, original.title);
         assert_eq!(imported.start_items.len(), original.start_items.len());
     }

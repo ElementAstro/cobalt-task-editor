@@ -117,7 +117,8 @@ impl Coordinates {
     /// Parse Dec from string (e.g., "+41° 16' 9.0\"", "41:16:09.0", or "+41d 16m 9.0s")
     pub fn parse_dec(s: &str) -> Option<(i32, i32, f64, bool)> {
         // Support formats: +41° 16' 9.0", 41:16:09.0, +41d 16m 9.0s
-        let re_dms = regex_lite::Regex::new(r#"([+-]?)(\d+)[°d:\s]+(\d+)['m:\s]+(\d+\.?\d*)["s]?"#).ok()?;
+        let re_dms =
+            regex_lite::Regex::new(r#"([+-]?)(\d+)[°d:\s]+(\d+)['m:\s]+(\d+\.?\d*)["s]?"#).ok()?;
         if let Some(caps) = re_dms.captures(s) {
             let negative = caps.get(1).map(|m| m.as_str()) == Some("-");
             let degrees: i32 = caps.get(2)?.as_str().parse().ok()?;

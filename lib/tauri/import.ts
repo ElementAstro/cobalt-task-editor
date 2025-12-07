@@ -2,9 +2,12 @@
  * Import operations with Tauri/browser fallback
  */
 
-import { isTauri, invoke } from './platform';
-import type { SimpleTarget } from '../nina/simple-sequence-types';
-import { SequenceEntityStatus, SequenceMode } from '../nina/simple-sequence-types';
+import { isTauri, invoke } from "./platform";
+import type { SimpleTarget } from "../nina/simple-sequence-types";
+import {
+  SequenceEntityStatus,
+  SequenceMode,
+} from "../nina/simple-sequence-types";
 
 export interface ImportResult {
   success: boolean;
@@ -47,12 +50,12 @@ export interface FitsHeaderInfo {
  */
 export async function importCsvContent(
   content: string,
-  mapping?: CsvColumnMapping
+  mapping?: CsvColumnMapping,
 ): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_csv_content', { content, mapping });
+    return invoke<ImportResult>("import_csv_content", { content, mapping });
   }
-  
+
   // Browser fallback - basic CSV parsing
   return parseCsvInBrowser(content, mapping);
 }
@@ -60,18 +63,20 @@ export async function importCsvContent(
 /**
  * Import targets from Stellarium skylist content
  */
-export async function importStellariumContent(content: string): Promise<ImportResult> {
+export async function importStellariumContent(
+  content: string,
+): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_stellarium_content', { content });
+    return invoke<ImportResult>("import_stellarium_content", { content });
   }
-  
+
   // Browser fallback
   return {
     success: false,
     targets: [],
-    errors: ['Stellarium import requires desktop app'],
+    errors: ["Stellarium import requires desktop app"],
     warnings: [],
-    sourceFormat: 'Stellarium',
+    sourceFormat: "Stellarium",
     totalRows: 0,
     importedCount: 0,
     skippedCount: 0,
@@ -83,15 +88,15 @@ export async function importStellariumContent(content: string): Promise<ImportRe
  */
 export async function importAptContent(content: string): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_apt_content', { content });
+    return invoke<ImportResult>("import_apt_content", { content });
   }
-  
+
   return {
     success: false,
     targets: [],
-    errors: ['APT import requires desktop app'],
+    errors: ["APT import requires desktop app"],
     warnings: [],
-    sourceFormat: 'APT',
+    sourceFormat: "APT",
     totalRows: 0,
     importedCount: 0,
     skippedCount: 0,
@@ -101,17 +106,19 @@ export async function importAptContent(content: string): Promise<ImportResult> {
 /**
  * Import targets from Voyager format content
  */
-export async function importVoyagerContent(content: string): Promise<ImportResult> {
+export async function importVoyagerContent(
+  content: string,
+): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_voyager_content', { content });
+    return invoke<ImportResult>("import_voyager_content", { content });
   }
-  
+
   return {
     success: false,
     targets: [],
-    errors: ['Voyager import requires desktop app'],
+    errors: ["Voyager import requires desktop app"],
     warnings: [],
-    sourceFormat: 'Voyager',
+    sourceFormat: "Voyager",
     totalRows: 0,
     importedCount: 0,
     skippedCount: 0,
@@ -123,15 +130,15 @@ export async function importVoyagerContent(content: string): Promise<ImportResul
  */
 export async function importXmlContent(content: string): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_xml_content', { content });
+    return invoke<ImportResult>("import_xml_content", { content });
   }
-  
+
   return {
     success: false,
     targets: [],
-    errors: ['XML import requires desktop app'],
+    errors: ["XML import requires desktop app"],
     warnings: [],
-    sourceFormat: 'XML',
+    sourceFormat: "XML",
     totalRows: 0,
     importedCount: 0,
     skippedCount: 0,
@@ -143,24 +150,27 @@ export async function importXmlContent(content: string): Promise<ImportResult> {
  */
 export async function importAutoDetect(
   content: string,
-  fileExtension?: string
+  fileExtension?: string,
 ): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_auto_detect', { content, fileExtension });
+    return invoke<ImportResult>("import_auto_detect", {
+      content,
+      fileExtension,
+    });
   }
-  
+
   // Browser fallback - try CSV
-  const ext = fileExtension?.toLowerCase() || '';
-  if (ext === 'csv' || !ext) {
+  const ext = fileExtension?.toLowerCase() || "";
+  if (ext === "csv" || !ext) {
     return parseCsvInBrowser(content);
   }
-  
+
   return {
     success: false,
     targets: [],
     errors: [`Format '${ext}' requires desktop app`],
     warnings: [],
-    sourceFormat: 'Unknown',
+    sourceFormat: "Unknown",
     totalRows: 0,
     importedCount: 0,
     skippedCount: 0,
@@ -172,18 +182,21 @@ export async function importAutoDetect(
  */
 export async function detectCsvFormat(headers: string[]): Promise<string> {
   if (isTauri()) {
-    return invoke<string>('detect_csv_format_from_headers', { headers });
+    return invoke<string>("detect_csv_format_from_headers", { headers });
   }
-  
+
   // Browser fallback
-  const headersLower = headers.map(h => h.toLowerCase());
-  if (headersLower.includes('catalogue entry') || headersLower.includes('familiar name')) {
-    return 'Telescopius';
+  const headersLower = headers.map((h) => h.toLowerCase());
+  if (
+    headersLower.includes("catalogue entry") ||
+    headersLower.includes("familiar name")
+  ) {
+    return "Telescopius";
   }
-  if (headersLower.includes('ra') && headersLower.includes('dec')) {
-    return 'Generic';
+  if (headersLower.includes("ra") && headersLower.includes("dec")) {
+    return "Generic";
   }
-  return 'Unknown';
+  return "Unknown";
 }
 
 /**
@@ -191,24 +204,26 @@ export async function detectCsvFormat(headers: string[]): Promise<string> {
  */
 export async function importCsvFile(
   path: string,
-  mapping?: CsvColumnMapping
+  mapping?: CsvColumnMapping,
 ): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_csv_file', { path, mapping });
+    return invoke<ImportResult>("import_csv_file", { path, mapping });
   }
-  
-  throw new Error('File import requires desktop app');
+
+  throw new Error("File import requires desktop app");
 }
 
 /**
  * Import from Stellarium file (Tauri only)
  */
-export async function importStellariumFile(path: string): Promise<ImportResult> {
+export async function importStellariumFile(
+  path: string,
+): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_stellarium_file', { path });
+    return invoke<ImportResult>("import_stellarium_file", { path });
   }
-  
-  throw new Error('File import requires desktop app');
+
+  throw new Error("File import requires desktop app");
 }
 
 /**
@@ -216,21 +231,23 @@ export async function importStellariumFile(path: string): Promise<ImportResult> 
  */
 export async function importXmlFile(path: string): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('import_xml_file', { path });
+    return invoke<ImportResult>("import_xml_file", { path });
   }
-  
-  throw new Error('File import requires desktop app');
+
+  throw new Error("File import requires desktop app");
 }
 
 /**
  * Import from FITS file (Tauri only)
  */
-export async function importFitsFile(path: string): Promise<SimpleTarget | null> {
+export async function importFitsFile(
+  path: string,
+): Promise<SimpleTarget | null> {
   if (isTauri()) {
-    return invoke<SimpleTarget | null>('import_fits_file', { path });
+    return invoke<SimpleTarget | null>("import_fits_file", { path });
   }
-  
-  throw new Error('FITS import requires desktop app');
+
+  throw new Error("FITS import requires desktop app");
 }
 
 /**
@@ -238,10 +255,10 @@ export async function importFitsFile(path: string): Promise<SimpleTarget | null>
  */
 export async function batchImportFiles(paths: string[]): Promise<ImportResult> {
   if (isTauri()) {
-    return invoke<ImportResult>('batch_import_files', { paths });
+    return invoke<ImportResult>("batch_import_files", { paths });
   }
-  
-  throw new Error('Batch import requires desktop app');
+
+  throw new Error("Batch import requires desktop app");
 }
 
 /**
@@ -249,23 +266,29 @@ export async function batchImportFiles(paths: string[]): Promise<ImportResult> {
  */
 export async function validateCsvMapping(
   headers: string[],
-  mapping: CsvColumnMapping
+  mapping: CsvColumnMapping,
 ): Promise<string[]> {
   if (isTauri()) {
-    return invoke<string[]>('validate_csv_mapping', { headers, mapping });
+    return invoke<string[]>("validate_csv_mapping", { headers, mapping });
   }
-  
+
   // Browser fallback
   const errors: string[] = [];
-  const headersLower = headers.map(h => h.toLowerCase());
-  
-  if (mapping.raColumn && !headersLower.includes(mapping.raColumn.toLowerCase())) {
+  const headersLower = headers.map((h) => h.toLowerCase());
+
+  if (
+    mapping.raColumn &&
+    !headersLower.includes(mapping.raColumn.toLowerCase())
+  ) {
     errors.push(`RA column '${mapping.raColumn}' not found`);
   }
-  if (mapping.decColumn && !headersLower.includes(mapping.decColumn.toLowerCase())) {
+  if (
+    mapping.decColumn &&
+    !headersLower.includes(mapping.decColumn.toLowerCase())
+  ) {
     errors.push(`Dec column '${mapping.decColumn}' not found`);
   }
-  
+
   return errors;
 }
 
@@ -274,16 +297,16 @@ export async function validateCsvMapping(
  */
 export async function previewCsvContent(
   content: string,
-  maxRows: number = 10
+  maxRows: number = 10,
 ): Promise<string[][]> {
   if (isTauri()) {
-    return invoke<string[][]>('preview_csv_content', { content, maxRows });
+    return invoke<string[][]>("preview_csv_content", { content, maxRows });
   }
-  
+
   // Browser fallback
-  const lines = content.split('\n').slice(0, maxRows);
-  return lines.map(line => 
-    line.split(',').map(field => field.trim().replace(/^"|"$/g, ''))
+  const lines = content.split("\n").slice(0, maxRows);
+  return lines.map((line) =>
+    line.split(",").map((field) => field.trim().replace(/^"|"$/g, "")),
   );
 }
 
@@ -292,8 +315,8 @@ export async function previewCsvContent(
  */
 export async function importFromFile(file: File): Promise<ImportResult> {
   const content = await file.text();
-  const ext = file.name.split('.').pop()?.toLowerCase() || '';
-  
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+
   return importAutoDetect(content, ext);
 }
 
@@ -303,79 +326,92 @@ export async function importFromFile(file: File): Promise<ImportResult> {
 
 function parseCsvInBrowser(
   content: string,
-  mapping?: CsvColumnMapping
+  mapping?: CsvColumnMapping,
 ): ImportResult {
-  const lines = content.split('\n').filter(line => line.trim());
+  const lines = content.split("\n").filter((line) => line.trim());
   if (lines.length === 0) {
     return {
       success: false,
       targets: [],
-      errors: ['Empty CSV content'],
+      errors: ["Empty CSV content"],
       warnings: [],
-      sourceFormat: 'CSV',
+      sourceFormat: "CSV",
       totalRows: 0,
       importedCount: 0,
       skippedCount: 0,
     };
   }
-  
+
   const hasHeader = mapping?.hasHeader ?? true;
-  const delimiter = mapping?.delimiter || ',';
-  
-  const headers = hasHeader 
-    ? lines[0].split(delimiter).map(h => h.trim().toLowerCase())
+  const delimiter = mapping?.delimiter || ",";
+
+  const headers = hasHeader
+    ? lines[0].split(delimiter).map((h) => h.trim().toLowerCase())
     : [];
-  
+
   const dataLines = hasHeader ? lines.slice(1) : lines;
   const targets: SimpleTarget[] = [];
   const warnings: string[] = [];
-  
+
   // Find column indices
-  const nameIdx = findColumnIndex(headers, mapping?.nameColumn || 'name', ['name', 'target', 'object']);
-  const raIdx = findColumnIndex(headers, mapping?.raColumn || 'ra', ['ra', 'right ascension']);
-  const decIdx = findColumnIndex(headers, mapping?.decColumn || 'dec', ['dec', 'declination']);
-  const paIdx = findColumnIndex(headers, mapping?.positionAngleColumn, ['pa', 'position angle']);
-  
+  const nameIdx = findColumnIndex(headers, mapping?.nameColumn || "name", [
+    "name",
+    "target",
+    "object",
+  ]);
+  const raIdx = findColumnIndex(headers, mapping?.raColumn || "ra", [
+    "ra",
+    "right ascension",
+  ]);
+  const decIdx = findColumnIndex(headers, mapping?.decColumn || "dec", [
+    "dec",
+    "declination",
+  ]);
+  const paIdx = findColumnIndex(headers, mapping?.positionAngleColumn, [
+    "pa",
+    "position angle",
+  ]);
+
   if (raIdx === -1 || decIdx === -1) {
     return {
       success: false,
       targets: [],
-      errors: ['Could not find RA and Dec columns'],
+      errors: ["Could not find RA and Dec columns"],
       warnings: [],
-      sourceFormat: 'CSV',
+      sourceFormat: "CSV",
       totalRows: dataLines.length,
       importedCount: 0,
       skippedCount: dataLines.length,
     };
   }
-  
+
   for (let i = 0; i < dataLines.length; i++) {
     const fields = parseCsvLine(dataLines[i], delimiter);
-    
+
     try {
       const name = nameIdx >= 0 ? fields[nameIdx] : `Target ${i + 1}`;
       const raStr = fields[raIdx];
       const decStr = fields[decIdx];
       const pa = paIdx >= 0 ? parseFloat(fields[paIdx]) || 0 : 0;
-      
+
       const coords = parseCoordinates(raStr, decStr);
       if (!coords) {
         warnings.push(`Row ${i + 1}: Could not parse coordinates`);
         continue;
       }
-      
+
       targets.push(createTarget(name, coords, pa));
     } catch (e) {
       warnings.push(`Row ${i + 1}: ${e}`);
     }
   }
-  
+
   return {
     success: true,
     targets,
     errors: [],
     warnings,
-    sourceFormat: 'CSV',
+    sourceFormat: "CSV",
     totalRows: dataLines.length,
     importedCount: targets.length,
     skippedCount: dataLines.length - targets.length,
@@ -385,42 +421,45 @@ function parseCsvInBrowser(
 function findColumnIndex(
   headers: string[],
   preferred: string | undefined,
-  alternatives: string[]
+  alternatives: string[],
 ): number {
   if (preferred) {
     const idx = headers.indexOf(preferred.toLowerCase());
     if (idx >= 0) return idx;
   }
-  
+
   for (const alt of alternatives) {
-    const idx = headers.findIndex(h => h.includes(alt));
+    const idx = headers.findIndex((h) => h.includes(alt));
     if (idx >= 0) return idx;
   }
-  
+
   return -1;
 }
 
 function parseCsvLine(line: string, delimiter: string): string[] {
   const fields: string[] = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
-  
+
   for (const char of line) {
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === delimiter && !inQuotes) {
       fields.push(current.trim());
-      current = '';
+      current = "";
     } else {
       current += char;
     }
   }
   fields.push(current.trim());
-  
+
   return fields;
 }
 
-function parseCoordinates(raStr: string, decStr: string): {
+function parseCoordinates(
+  raStr: string,
+  decStr: string,
+): {
   raHours: number;
   raMinutes: number;
   raSeconds: number;
@@ -431,7 +470,9 @@ function parseCoordinates(raStr: string, decStr: string): {
 } | null {
   try {
     // Try parsing RA
-    let raH = 0, raM = 0, raS = 0;
+    let raH = 0,
+      raM = 0,
+      raS = 0;
     const raMatch = raStr.match(/(\d+)[h:\s]+(\d+)[m:\s]+(\d+\.?\d*)/);
     if (raMatch) {
       raH = parseInt(raMatch[1]);
@@ -448,12 +489,17 @@ function parseCoordinates(raStr: string, decStr: string): {
         return null;
       }
     }
-    
+
     // Try parsing Dec
-    let decD = 0, decM = 0, decS = 0, negative = false;
-    const decMatch = decStr.match(/([+-]?)(\d+)[°d:\s]+(\d+)['m:\s]+(\d+\.?\d*)/);
+    let decD = 0,
+      decM = 0,
+      decS = 0,
+      negative = false;
+    const decMatch = decStr.match(
+      /([+-]?)(\d+)[°d:\s]+(\d+)['m:\s]+(\d+\.?\d*)/,
+    );
     if (decMatch) {
-      negative = decMatch[1] === '-';
+      negative = decMatch[1] === "-";
       decD = parseInt(decMatch[2]);
       decM = parseInt(decMatch[3]);
       decS = parseFloat(decMatch[4]);
@@ -470,7 +516,7 @@ function parseCoordinates(raStr: string, decStr: string): {
         return null;
       }
     }
-    
+
     return {
       raHours: raH,
       raMinutes: raM,
@@ -488,7 +534,7 @@ function parseCoordinates(raStr: string, decStr: string): {
 function createTarget(
   name: string,
   coords: ReturnType<typeof parseCoordinates>,
-  positionAngle: number
+  positionAngle: number,
 ): SimpleTarget {
   return {
     id: crypto.randomUUID(),

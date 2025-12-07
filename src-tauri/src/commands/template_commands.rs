@@ -2,9 +2,9 @@
 
 use tauri::command;
 
-use crate::models::{SimpleSequence, SimpleTarget, SimpleExposure};
+use crate::models::{SimpleExposure, SimpleSequence, SimpleTarget};
 use crate::services::template_service::{
-    self, TemplateMetadata, SimpleSequenceTemplate, TargetTemplate, ExposureSetTemplate,
+    self, ExposureSetTemplate, SimpleSequenceTemplate, TargetTemplate, TemplateMetadata,
 };
 
 /// Save simple sequence as template
@@ -16,7 +16,8 @@ pub async fn save_sequence_template(
     tags: Vec<String>,
     sequence: SimpleSequence,
 ) -> Result<TemplateMetadata, String> {
-    template_service::save_simple_sequence_template(&name, &description, &category, tags, sequence).await
+    template_service::save_simple_sequence_template(&name, &description, &category, tags, sequence)
+        .await
 }
 
 /// Load simple sequence template
@@ -88,18 +89,18 @@ pub async fn list_exposure_templates() -> Result<Vec<TemplateMetadata>, String> 
 pub async fn apply_target_template(id: String) -> Result<SimpleTarget, String> {
     let template = template_service::load_target_template(&id).await?;
     let mut target = template.target;
-    
+
     // Generate new ID
     target.id = uuid::Uuid::new_v4().to_string();
     target.status = crate::models::SequenceEntityStatus::Created;
-    
+
     // Reset progress for exposures
     for exp in &mut target.exposures {
         exp.id = uuid::Uuid::new_v4().to_string();
         exp.progress_count = 0;
         exp.status = crate::models::SequenceEntityStatus::Created;
     }
-    
+
     Ok(target)
 }
 
@@ -107,11 +108,15 @@ pub async fn apply_target_template(id: String) -> Result<SimpleTarget, String> {
 #[command]
 pub async fn apply_exposure_template(id: String) -> Result<Vec<SimpleExposure>, String> {
     let template = template_service::load_exposure_set_template(&id).await?;
-    
-    Ok(template.exposures.into_iter().map(|mut exp| {
-        exp.id = uuid::Uuid::new_v4().to_string();
-        exp.progress_count = 0;
-        exp.status = crate::models::SequenceEntityStatus::Created;
-        exp
-    }).collect())
+
+    Ok(template
+        .exposures
+        .into_iter()
+        .map(|mut exp| {
+            exp.id = uuid::Uuid::new_v4().to_string();
+            exp.progress_count = 0;
+            exp.status = crate::models::SequenceEntityStatus::Created;
+            exp
+        })
+        .collect())
 }

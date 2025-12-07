@@ -2,9 +2,9 @@
 //!
 //! A cross-platform desktop application for editing NINA astronomy sequences.
 
+pub mod commands;
 pub mod models;
 pub mod services;
-pub mod commands;
 
 #[cfg(test)]
 mod tests;
@@ -15,9 +15,11 @@ use commands::*;
 pub fn run() {
     tauri::Builder::default()
         // Register plugins
-        .plugin(tauri_plugin_log::Builder::default()
-            .level(log::LevelFilter::Info)
-            .build())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())

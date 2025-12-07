@@ -2,8 +2,12 @@
  * Template management with Tauri/browser fallback
  */
 
-import { isTauri, invoke } from './platform';
-import type { SimpleSequence, SimpleTarget, SimpleExposure } from '../nina/simple-sequence-types';
+import { isTauri, invoke } from "./platform";
+import type {
+  SimpleSequence,
+  SimpleTarget,
+  SimpleExposure,
+} from "../nina/simple-sequence-types";
 
 export interface TemplateMetadata {
   id: string;
@@ -31,7 +35,7 @@ export interface ExposureSetTemplate {
   exposures: SimpleExposure[];
 }
 
-const TEMPLATES_KEY = 'cobalt-templates';
+const TEMPLATES_KEY = "cobalt-templates";
 
 /**
  * Get templates from localStorage (browser fallback)
@@ -56,45 +60,58 @@ export async function saveSequenceTemplate(
   description: string,
   category: string,
   tags: string[],
-  sequence: SimpleSequence
+  sequence: SimpleSequence,
 ): Promise<TemplateMetadata> {
   if (isTauri()) {
-    return invoke<TemplateMetadata>('save_sequence_template', {
-      name, description, category, tags, sequence
+    return invoke<TemplateMetadata>("save_sequence_template", {
+      name,
+      description,
+      category,
+      tags,
+      sequence,
     });
   }
-  
+
   // Browser fallback
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const metadata: TemplateMetadata = {
-    id, name, description, category,
-    createdAt: now, updatedAt: now,
-    tags, isBuiltin: false
+    id,
+    name,
+    description,
+    category,
+    createdAt: now,
+    updatedAt: now,
+    tags,
+    isBuiltin: false,
   };
-  
+
   const template: SimpleSequenceTemplate = { metadata, sequence };
-  const templates = getLocalTemplates<SimpleSequenceTemplate>('sequence');
+  const templates = getLocalTemplates<SimpleSequenceTemplate>("sequence");
   templates.push(template);
-  saveLocalTemplates('sequence', templates);
-  
+  saveLocalTemplates("sequence", templates);
+
   return metadata;
 }
 
 /**
  * Load simple sequence template
  */
-export async function loadSequenceTemplate(id: string): Promise<SimpleSequenceTemplate | null> {
+export async function loadSequenceTemplate(
+  id: string,
+): Promise<SimpleSequenceTemplate | null> {
   if (isTauri()) {
     try {
-      return await invoke<SimpleSequenceTemplate>('load_sequence_template', { id });
+      return await invoke<SimpleSequenceTemplate>("load_sequence_template", {
+        id,
+      });
     } catch {
       return null;
     }
   }
-  
-  const templates = getLocalTemplates<SimpleSequenceTemplate>('sequence');
-  return templates.find(t => t.metadata.id === id) || null;
+
+  const templates = getLocalTemplates<SimpleSequenceTemplate>("sequence");
+  return templates.find((t) => t.metadata.id === id) || null;
 }
 
 /**
@@ -102,11 +119,11 @@ export async function loadSequenceTemplate(id: string): Promise<SimpleSequenceTe
  */
 export async function listSequenceTemplates(): Promise<TemplateMetadata[]> {
   if (isTauri()) {
-    return invoke<TemplateMetadata[]>('list_sequence_templates');
+    return invoke<TemplateMetadata[]>("list_sequence_templates");
   }
-  
-  const templates = getLocalTemplates<SimpleSequenceTemplate>('sequence');
-  return templates.map(t => t.metadata);
+
+  const templates = getLocalTemplates<SimpleSequenceTemplate>("sequence");
+  return templates.map((t) => t.metadata);
 }
 
 /**
@@ -114,12 +131,12 @@ export async function listSequenceTemplates(): Promise<TemplateMetadata[]> {
  */
 export async function deleteSequenceTemplate(id: string): Promise<void> {
   if (isTauri()) {
-    return invoke<void>('delete_sequence_template', { id });
+    return invoke<void>("delete_sequence_template", { id });
   }
-  
-  const templates = getLocalTemplates<SimpleSequenceTemplate>('sequence');
-  const filtered = templates.filter(t => t.metadata.id !== id);
-  saveLocalTemplates('sequence', filtered);
+
+  const templates = getLocalTemplates<SimpleSequenceTemplate>("sequence");
+  const filtered = templates.filter((t) => t.metadata.id !== id);
+  saveLocalTemplates("sequence", filtered);
 }
 
 /**
@@ -129,44 +146,54 @@ export async function saveTargetTemplate(
   name: string,
   description: string,
   tags: string[],
-  target: SimpleTarget
+  target: SimpleTarget,
 ): Promise<TemplateMetadata> {
   if (isTauri()) {
-    return invoke<TemplateMetadata>('save_target_template', {
-      name, description, tags, target
+    return invoke<TemplateMetadata>("save_target_template", {
+      name,
+      description,
+      tags,
+      target,
     });
   }
-  
+
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const metadata: TemplateMetadata = {
-    id, name, description, category: 'target',
-    createdAt: now, updatedAt: now,
-    tags, isBuiltin: false
+    id,
+    name,
+    description,
+    category: "target",
+    createdAt: now,
+    updatedAt: now,
+    tags,
+    isBuiltin: false,
   };
-  
+
   const template: TargetTemplate = { metadata, target };
-  const templates = getLocalTemplates<TargetTemplate>('target');
+  const templates = getLocalTemplates<TargetTemplate>("target");
   templates.push(template);
-  saveLocalTemplates('target', templates);
-  
+  saveLocalTemplates("target", templates);
+
   return metadata;
 }
 
 /**
  * Load target template
  */
-export async function loadTargetTemplate(id: string): Promise<TargetTemplate | null> {
+export async function loadTargetTemplate(
+  id: string,
+): Promise<TargetTemplate | null> {
   if (isTauri()) {
     try {
-      return await invoke<TargetTemplate>('load_target_template', { id });
+      return await invoke<TargetTemplate>("load_target_template", { id });
     } catch {
       return null;
     }
   }
-  
-  const templates = getLocalTemplates<TargetTemplate>('target');
-  return templates.find(t => t.metadata.id === id) || null;
+
+  const templates = getLocalTemplates<TargetTemplate>("target");
+  return templates.find((t) => t.metadata.id === id) || null;
 }
 
 /**
@@ -174,11 +201,11 @@ export async function loadTargetTemplate(id: string): Promise<TargetTemplate | n
  */
 export async function listTargetTemplates(): Promise<TemplateMetadata[]> {
   if (isTauri()) {
-    return invoke<TemplateMetadata[]>('list_target_templates');
+    return invoke<TemplateMetadata[]>("list_target_templates");
   }
-  
-  const templates = getLocalTemplates<TargetTemplate>('target');
-  return templates.map(t => t.metadata);
+
+  const templates = getLocalTemplates<TargetTemplate>("target");
+  return templates.map((t) => t.metadata);
 }
 
 /**
@@ -188,44 +215,56 @@ export async function saveExposureTemplate(
   name: string,
   description: string,
   tags: string[],
-  exposures: SimpleExposure[]
+  exposures: SimpleExposure[],
 ): Promise<TemplateMetadata> {
   if (isTauri()) {
-    return invoke<TemplateMetadata>('save_exposure_template', {
-      name, description, tags, exposures
+    return invoke<TemplateMetadata>("save_exposure_template", {
+      name,
+      description,
+      tags,
+      exposures,
     });
   }
-  
+
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const metadata: TemplateMetadata = {
-    id, name, description, category: 'exposure',
-    createdAt: now, updatedAt: now,
-    tags, isBuiltin: false
+    id,
+    name,
+    description,
+    category: "exposure",
+    createdAt: now,
+    updatedAt: now,
+    tags,
+    isBuiltin: false,
   };
-  
+
   const template: ExposureSetTemplate = { metadata, exposures };
-  const templates = getLocalTemplates<ExposureSetTemplate>('exposure');
+  const templates = getLocalTemplates<ExposureSetTemplate>("exposure");
   templates.push(template);
-  saveLocalTemplates('exposure', templates);
-  
+  saveLocalTemplates("exposure", templates);
+
   return metadata;
 }
 
 /**
  * Load exposure set template
  */
-export async function loadExposureTemplate(id: string): Promise<ExposureSetTemplate | null> {
+export async function loadExposureTemplate(
+  id: string,
+): Promise<ExposureSetTemplate | null> {
   if (isTauri()) {
     try {
-      return await invoke<ExposureSetTemplate>('load_exposure_template', { id });
+      return await invoke<ExposureSetTemplate>("load_exposure_template", {
+        id,
+      });
     } catch {
       return null;
     }
   }
-  
-  const templates = getLocalTemplates<ExposureSetTemplate>('exposure');
-  return templates.find(t => t.metadata.id === id) || null;
+
+  const templates = getLocalTemplates<ExposureSetTemplate>("exposure");
+  return templates.find((t) => t.metadata.id === id) || null;
 }
 
 /**
@@ -233,55 +272,59 @@ export async function loadExposureTemplate(id: string): Promise<ExposureSetTempl
  */
 export async function listExposureTemplates(): Promise<TemplateMetadata[]> {
   if (isTauri()) {
-    return invoke<TemplateMetadata[]>('list_exposure_templates');
+    return invoke<TemplateMetadata[]>("list_exposure_templates");
   }
-  
-  const templates = getLocalTemplates<ExposureSetTemplate>('exposure');
-  return templates.map(t => t.metadata);
+
+  const templates = getLocalTemplates<ExposureSetTemplate>("exposure");
+  return templates.map((t) => t.metadata);
 }
 
 /**
  * Apply target template (returns new target with new ID)
  */
-export async function applyTargetTemplate(id: string): Promise<SimpleTarget | null> {
+export async function applyTargetTemplate(
+  id: string,
+): Promise<SimpleTarget | null> {
   if (isTauri()) {
     try {
-      return await invoke<SimpleTarget>('apply_target_template', { id });
+      return await invoke<SimpleTarget>("apply_target_template", { id });
     } catch {
       return null;
     }
   }
-  
+
   const template = await loadTargetTemplate(id);
   if (!template) return null;
-  
+
   const target = { ...template.target };
   target.id = crypto.randomUUID();
-  target.exposures = target.exposures.map(e => ({
+  target.exposures = target.exposures.map((e) => ({
     ...e,
     id: crypto.randomUUID(),
     progressCount: 0,
   }));
-  
+
   return target;
 }
 
 /**
  * Apply exposure set template (returns new exposures with new IDs)
  */
-export async function applyExposureTemplate(id: string): Promise<SimpleExposure[] | null> {
+export async function applyExposureTemplate(
+  id: string,
+): Promise<SimpleExposure[] | null> {
   if (isTauri()) {
     try {
-      return await invoke<SimpleExposure[]>('apply_exposure_template', { id });
+      return await invoke<SimpleExposure[]>("apply_exposure_template", { id });
     } catch {
       return null;
     }
   }
-  
+
   const template = await loadExposureTemplate(id);
   if (!template) return null;
-  
-  return template.exposures.map(e => ({
+
+  return template.exposures.map((e) => ({
     ...e,
     id: crypto.randomUUID(),
     progressCount: 0,

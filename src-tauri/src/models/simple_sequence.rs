@@ -1,10 +1,10 @@
 //! Simple Sequence types (Target Set)
-//! 
+//!
 //! These types represent the simplified NINA sequence format
 //! used for basic target and exposure management.
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 use super::common::{BinningMode, FilterInfo, ImageType, SequenceEntityStatus, SequenceMode};
 use super::coordinates::Coordinates;
@@ -16,7 +16,7 @@ pub struct SimpleExposure {
     pub id: String,
     pub enabled: bool,
     pub status: SequenceEntityStatus,
-    
+
     // Exposure settings
     pub exposure_time: f64,
     pub image_type: ImageType,
@@ -25,11 +25,11 @@ pub struct SimpleExposure {
     pub binning: BinningMode,
     pub gain: i32,
     pub offset: i32,
-    
+
     // Progress
     pub total_count: i32,
     pub progress_count: i32,
-    
+
     // Dithering
     pub dither: bool,
     pub dither_every: i32,
@@ -100,13 +100,13 @@ pub struct SimpleTarget {
     pub status: SequenceEntityStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_name: Option<String>,
-    
+
     // Target info
     pub target_name: String,
     pub coordinates: Coordinates,
     pub position_angle: f64,
     pub rotation: f64,
-    
+
     // Target options
     pub delay: i32,
     pub mode: SequenceMode,
@@ -114,7 +114,7 @@ pub struct SimpleTarget {
     pub center_target: bool,
     pub rotate_target: bool,
     pub start_guiding: bool,
-    
+
     // Autofocus options
     pub auto_focus_on_start: bool,
     pub auto_focus_on_filter_change: bool,
@@ -126,10 +126,10 @@ pub struct SimpleTarget {
     pub auto_focus_after_temperature_change_amount: f64,
     pub auto_focus_after_hfr_change: bool,
     pub auto_focus_after_hfr_change_amount: f64,
-    
+
     // Exposures
     pub exposures: Vec<SimpleExposure>,
-    
+
     // ETA
     #[serde(skip_serializing_if = "Option::is_none")]
     pub estimated_start_time: Option<DateTime<Utc>>,
@@ -263,21 +263,21 @@ pub struct SimpleSequence {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub save_path: Option<String>,
     pub is_dirty: bool,
-    
+
     // Start/End options
     pub start_options: StartOptions,
     pub end_options: EndOptions,
-    
+
     // Targets
     pub targets: Vec<SimpleTarget>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub selected_target_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active_target_id: Option<String>,
-    
+
     // Status
     pub is_running: bool,
-    
+
     // ETA
     #[serde(skip_serializing_if = "Option::is_none")]
     pub overall_start_time: Option<DateTime<Utc>>,
@@ -285,7 +285,7 @@ pub struct SimpleSequence {
     pub overall_end_time: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub overall_duration: Option<f64>,
-    
+
     // Download time estimation
     pub estimated_download_time: f64,
 }
@@ -294,7 +294,7 @@ impl Default for SimpleSequence {
     fn default() -> Self {
         let first_target = SimpleTarget::default();
         let first_target_id = first_target.id.clone();
-        
+
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             title: "Target Set".to_string(),
@@ -364,7 +364,7 @@ impl SimpleSequence {
             let target_duration = target.runtime(download_time);
             target.estimated_start_time = Some(current_time);
             target.estimated_duration = Some(target_duration);
-            current_time = current_time + chrono::Duration::seconds(target_duration as i64);
+            current_time += chrono::Duration::seconds(target_duration as i64);
             target.estimated_end_time = Some(current_time);
             total_duration += target_duration;
         }
@@ -543,7 +543,8 @@ impl From<&SimpleTarget> for CaptureSequenceExport {
             auto_focus_after_set_exposures: target.auto_focus_after_set_exposures,
             auto_focus_set_exposures: target.auto_focus_set_exposures,
             auto_focus_after_temperature_change: target.auto_focus_after_temperature_change,
-            auto_focus_after_temperature_change_amount: target.auto_focus_after_temperature_change_amount,
+            auto_focus_after_temperature_change_amount: target
+                .auto_focus_after_temperature_change_amount,
             auto_focus_after_hfr_change: target.auto_focus_after_hfr_change,
             auto_focus_after_hfr_change_amount: target.auto_focus_after_hfr_change_amount,
             items: target.exposures.iter().map(|e| e.into()).collect(),

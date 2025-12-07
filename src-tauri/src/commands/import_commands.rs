@@ -6,10 +6,9 @@ use tauri::command;
 
 use crate::models::SimpleTarget;
 use crate::services::import_service::{
-    ImportResult, CsvColumnMapping, FitsHeaderInfo,
-    parse_csv_content, parse_stellarium_skylist, parse_apt_format,
-    parse_voyager_format, parse_xml_content, parse_fits_header,
-    create_target_from_fits, detect_csv_format,
+    create_target_from_fits, detect_csv_format, parse_apt_format, parse_csv_content,
+    parse_fits_header, parse_stellarium_skylist, parse_voyager_format, parse_xml_content,
+    CsvColumnMapping, FitsHeaderInfo, ImportResult,
 };
 
 /// Import targets from CSV content
@@ -23,33 +22,25 @@ pub async fn import_csv_content(
 
 /// Import targets from Stellarium skylist content
 #[command]
-pub async fn import_stellarium_content(
-    content: String,
-) -> Result<ImportResult, String> {
+pub async fn import_stellarium_content(content: String) -> Result<ImportResult, String> {
     Ok(parse_stellarium_skylist(&content))
 }
 
 /// Import targets from APT format content
 #[command]
-pub async fn import_apt_content(
-    content: String,
-) -> Result<ImportResult, String> {
+pub async fn import_apt_content(content: String) -> Result<ImportResult, String> {
     Ok(parse_apt_format(&content))
 }
 
 /// Import targets from Voyager format content
 #[command]
-pub async fn import_voyager_content(
-    content: String,
-) -> Result<ImportResult, String> {
+pub async fn import_voyager_content(content: String) -> Result<ImportResult, String> {
     Ok(parse_voyager_format(&content))
 }
 
 /// Import targets from XML content
 #[command]
-pub async fn import_xml_content(
-    content: String,
-) -> Result<ImportResult, String> {
+pub async fn import_xml_content(content: String) -> Result<ImportResult, String> {
     Ok(parse_xml_content(&content))
 }
 
@@ -60,7 +51,7 @@ pub async fn import_auto_detect(
     file_extension: Option<String>,
 ) -> Result<ImportResult, String> {
     let ext = file_extension.unwrap_or_default().to_lowercase();
-    
+
     // Try to detect by extension first
     match ext.as_str() {
         "csv" => Ok(parse_csv_content(&content, None)),
@@ -84,18 +75,14 @@ pub async fn import_auto_detect(
 
 /// Detect CSV format from headers
 #[command]
-pub async fn detect_csv_format_from_headers(
-    headers: Vec<String>,
-) -> Result<String, String> {
+pub async fn detect_csv_format_from_headers(headers: Vec<String>) -> Result<String, String> {
     let format = detect_csv_format(&headers);
     Ok(format!("{:?}", format))
 }
 
 /// Parse FITS header from bytes
 #[command]
-pub async fn parse_fits_header_bytes(
-    data: Vec<u8>,
-) -> Result<FitsHeaderInfo, String> {
+pub async fn parse_fits_header_bytes(data: Vec<u8>) -> Result<FitsHeaderInfo, String> {
     parse_fits_header(&data)
 }
 
@@ -116,64 +103,56 @@ pub async fn import_csv_file(
     let content = tokio::fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read file: {}", e))?;
-    
+
     Ok(parse_csv_content(&content, mapping))
 }
 
 /// Import from Stellarium file
 #[command]
-pub async fn import_stellarium_file(
-    path: String,
-) -> Result<ImportResult, String> {
+pub async fn import_stellarium_file(path: String) -> Result<ImportResult, String> {
     let content = tokio::fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read file: {}", e))?;
-    
+
     Ok(parse_stellarium_skylist(&content))
 }
 
 /// Import from XML file
 #[command]
-pub async fn import_xml_file(
-    path: String,
-) -> Result<ImportResult, String> {
+pub async fn import_xml_file(path: String) -> Result<ImportResult, String> {
     let content = tokio::fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read file: {}", e))?;
-    
+
     Ok(parse_xml_content(&content))
 }
 
 /// Import from FITS file (header only)
 #[command]
-pub async fn import_fits_file(
-    path: String,
-) -> Result<Option<SimpleTarget>, String> {
+pub async fn import_fits_file(path: String) -> Result<Option<SimpleTarget>, String> {
     let data = tokio::fs::read(&path)
         .await
         .map_err(|e| format!("Failed to read file: {}", e))?;
-    
+
     let info = parse_fits_header(&data)?;
     Ok(create_target_from_fits(&info))
 }
 
 /// Batch import from multiple files
 #[command]
-pub async fn batch_import_files(
-    paths: Vec<String>,
-) -> Result<ImportResult, String> {
+pub async fn batch_import_files(paths: Vec<String>) -> Result<ImportResult, String> {
     let mut all_targets = Vec::new();
     let mut all_errors = Vec::new();
     let mut all_warnings = Vec::new();
     let mut total_rows = 0;
-    
+
     for path in &paths {
         let ext = std::path::Path::new(path)
             .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("")
             .to_lowercase();
-        
+
         let content = match tokio::fs::read_to_string(path).await {
             Ok(c) => c,
             Err(e) => {
@@ -181,20 +160,20 @@ pub async fn batch_import_files(
                 continue;
             }
         };
-        
+
         let result = match ext.as_str() {
             "csv" => parse_csv_content(&content, None),
             "skylist" | "sl" => parse_stellarium_skylist(&content),
             "xml" => parse_xml_content(&content),
             _ => parse_csv_content(&content, None),
         };
-        
+
         all_targets.extend(result.targets);
         all_errors.extend(result.errors);
         all_warnings.extend(result.warnings);
         total_rows += result.total_rows;
     }
-    
+
     Ok(ImportResult {
         success: all_errors.is_empty(),
         targets: all_targets.clone(),
@@ -215,14 +194,14 @@ pub async fn validate_csv_mapping(
 ) -> Result<Vec<String>, String> {
     let mut errors = Vec::new();
     let headers_lower: Vec<String> = headers.iter().map(|h| h.to_lowercase()).collect();
-    
+
     // Check required columns
     if let Some(ref name_col) = mapping.name_column {
         if !headers_lower.contains(&name_col.to_lowercase()) {
             errors.push(format!("Name column '{}' not found in headers", name_col));
         }
     }
-    
+
     if let Some(ref ra_col) = mapping.ra_column {
         if !headers_lower.contains(&ra_col.to_lowercase()) {
             errors.push(format!("RA column '{}' not found in headers", ra_col));
@@ -230,7 +209,7 @@ pub async fn validate_csv_mapping(
     } else {
         errors.push("RA column is required".to_string());
     }
-    
+
     if let Some(ref dec_col) = mapping.dec_column {
         if !headers_lower.contains(&dec_col.to_lowercase()) {
             errors.push(format!("Dec column '{}' not found in headers", dec_col));
@@ -238,7 +217,7 @@ pub async fn validate_csv_mapping(
     } else {
         errors.push("Dec column is required".to_string());
     }
-    
+
     Ok(errors)
 }
 
@@ -249,17 +228,18 @@ pub async fn preview_csv_content(
     max_rows: usize,
 ) -> Result<Vec<Vec<String>>, String> {
     let mut rows = Vec::new();
-    
+
     for (idx, line) in content.lines().enumerate() {
         if idx >= max_rows {
             break;
         }
-        
-        let fields: Vec<String> = line.split(',')
+
+        let fields: Vec<String> = line
+            .split(',')
             .map(|s| s.trim().trim_matches('"').to_string())
             .collect();
         rows.push(fields);
     }
-    
+
     Ok(rows)
 }

@@ -1,10 +1,10 @@
 //! NINA format commands
 
-use tauri::command;
 use std::path::PathBuf;
+use tauri::command;
 
 use crate::models::EditorSequence;
-use crate::services::{nina_serializer, file_service};
+use crate::services::{file_service, nina_serializer};
 
 /// Export editor sequence to NINA JSON format
 #[command]
@@ -26,20 +26,21 @@ pub fn validate_nina_format(json: String) -> Result<(), Vec<String>> {
 
 /// Save editor sequence to NINA JSON file
 #[command]
-pub async fn save_nina_sequence_file(
-    path: String,
-    sequence: EditorSequence,
-) -> Result<(), String> {
+pub async fn save_nina_sequence_file(path: String, sequence: EditorSequence) -> Result<(), String> {
     let json = nina_serializer::export_to_nina(&sequence)?;
     let path = PathBuf::from(&path);
-    file_service::write_file(&path, &json).await.map_err(|e| e.to_string())
+    file_service::write_file(&path, &json)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Load editor sequence from NINA JSON file
 #[command]
 pub async fn load_nina_sequence_file(path: String) -> Result<EditorSequence, String> {
     let path = PathBuf::from(&path);
-    let content = file_service::read_file(&path).await.map_err(|e| e.to_string())?;
+    let content = file_service::read_file(&path)
+        .await
+        .map_err(|e| e.to_string())?;
     nina_serializer::import_from_nina(&content)
 }
 
@@ -58,7 +59,7 @@ pub fn export_template_to_nina(
         end_items: Vec::new(),
         global_triggers: Vec::new(),
     };
-    
+
     nina_serializer::export_to_nina(&sequence)
 }
 

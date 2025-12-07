@@ -89,7 +89,7 @@ pub fn duplicate_target(target: SimpleTarget) -> SimpleTarget {
     new_target.id = uuid::Uuid::new_v4().to_string();
     new_target.name = format!("{} (Copy)", new_target.name);
     new_target.target_name = format!("{} (Copy)", new_target.target_name);
-    
+
     // Reset progress
     for exposure in &mut new_target.exposures {
         exposure.id = uuid::Uuid::new_v4().to_string();
@@ -97,7 +97,7 @@ pub fn duplicate_target(target: SimpleTarget) -> SimpleTarget {
         exposure.status = SequenceEntityStatus::Created;
     }
     new_target.status = SequenceEntityStatus::Created;
-    
+
     new_target
 }
 
@@ -123,7 +123,7 @@ pub fn copy_exposures_to_all_targets(
         .find(|t| t.id == source_target_id)
         .map(|t| t.exposures.clone())
         .ok_or_else(|| "Source target not found".to_string())?;
-    
+
     for target in &mut sequence.targets {
         if target.id != source_target_id {
             target.exposures = source_exposures
@@ -138,7 +138,7 @@ pub fn copy_exposures_to_all_targets(
                 .collect();
         }
     }
-    
+
     sequence.is_dirty = true;
     Ok(sequence)
 }
@@ -172,11 +172,19 @@ pub fn reset_sequence_progress(mut sequence: SimpleSequence) -> SimpleSequence {
 #[command]
 pub fn get_sequence_statistics(sequence: SimpleSequence) -> SequenceStatistics {
     let total_targets = sequence.targets.len();
-    let total_exposures: i32 = sequence.targets.iter().map(|t| t.total_exposure_count()).sum();
-    let remaining_exposures: i32 = sequence.targets.iter().map(|t| t.remaining_exposure_count()).sum();
+    let total_exposures: i32 = sequence
+        .targets
+        .iter()
+        .map(|t| t.total_exposure_count())
+        .sum();
+    let remaining_exposures: i32 = sequence
+        .targets
+        .iter()
+        .map(|t| t.remaining_exposure_count())
+        .sum();
     let completed_exposures = total_exposures - remaining_exposures;
     let total_runtime = sequence.total_runtime();
-    
+
     let completed_runtime: f64 = sequence
         .targets
         .iter()
@@ -185,7 +193,8 @@ pub fn get_sequence_statistics(sequence: SimpleSequence) -> SequenceStatistics {
                 .iter()
                 .map(|e| {
                     if e.enabled {
-                        e.progress_count as f64 * (e.exposure_time + sequence.estimated_download_time)
+                        e.progress_count as f64
+                            * (e.exposure_time + sequence.estimated_download_time)
                     } else {
                         0.0
                     }
@@ -193,14 +202,14 @@ pub fn get_sequence_statistics(sequence: SimpleSequence) -> SequenceStatistics {
                 .sum::<f64>()
         })
         .sum();
-    
+
     let remaining_runtime = total_runtime - completed_runtime;
     let progress_percentage = if total_exposures > 0 {
         (completed_exposures as f64 / total_exposures as f64) * 100.0
     } else {
         0.0
     };
-    
+
     SequenceStatistics {
         total_targets,
         total_exposures,

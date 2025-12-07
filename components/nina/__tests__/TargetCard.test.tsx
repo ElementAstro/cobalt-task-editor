@@ -3,35 +3,35 @@
  * Tests target card display and interactions
  */
 
-import { render, screen } from '@testing-library/react';
-import { TargetCard } from '../TargetCard';
-import { I18nProvider } from '@/lib/i18n/context';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { render, screen } from "@testing-library/react";
+import { TargetCard } from "../TargetCard";
+import { I18nProvider } from "@/lib/i18n/context";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   SimpleTarget,
   SequenceEntityStatus,
   SequenceMode,
   ImageType,
   createDefaultCoordinates,
-} from '@/lib/nina/simple-sequence-types';
+} from "@/lib/nina/simple-sequence-types";
 
 // Helper to wrap component with required providers
 const renderWithProviders = (component: React.ReactNode) => {
   return render(
     <I18nProvider>
-      <TooltipProvider>
-        {component}
-      </TooltipProvider>
-    </I18nProvider>
+      <TooltipProvider>{component}</TooltipProvider>
+    </I18nProvider>,
   );
 };
 
 // Create mock target
-const createMockTarget = (overrides: Partial<SimpleTarget> = {}): SimpleTarget => ({
-  id: 'target-1',
-  name: 'M31',
+const createMockTarget = (
+  overrides: Partial<SimpleTarget> = {},
+): SimpleTarget => ({
+  id: "target-1",
+  name: "M31",
   status: SequenceEntityStatus.CREATED,
-  targetName: 'Andromeda Galaxy',
+  targetName: "Andromeda Galaxy",
   coordinates: createDefaultCoordinates(),
   positionAngle: 0,
   rotation: 0,
@@ -53,12 +53,12 @@ const createMockTarget = (overrides: Partial<SimpleTarget> = {}): SimpleTarget =
   autoFocusAfterHFRChangeAmount: 15,
   exposures: [
     {
-      id: 'exp-1',
+      id: "exp-1",
       enabled: true,
       status: SequenceEntityStatus.CREATED,
       exposureTime: 300,
       imageType: ImageType.LIGHT,
-      filter: { name: 'L', position: 0 },
+      filter: { name: "L", position: 0 },
       binning: { x: 1, y: 1 },
       gain: 100,
       offset: 10,
@@ -81,13 +81,13 @@ const mockHandlers = {
   onReset: jest.fn(),
 };
 
-describe('TargetCard', () => {
+describe("TargetCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Rendering', () => {
-    it('should render without crashing', () => {
+  describe("Rendering", () => {
+    it("should render without crashing", () => {
       const target = createMockTarget();
       renderWithProviders(
         <TargetCard
@@ -97,13 +97,13 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       expect(document.body).toBeInTheDocument();
     });
 
-    it('should display target name', () => {
-      const target = createMockTarget({ targetName: 'Orion Nebula' });
+    it("should display target name", () => {
+      const target = createMockTarget({ targetName: "Orion Nebula" });
       renderWithProviders(
         <TargetCard
           target={target}
@@ -112,12 +112,12 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
-      expect(screen.getByText('Orion Nebula')).toBeInTheDocument();
+      expect(screen.getByText("Orion Nebula")).toBeInTheDocument();
     });
 
-    it('should render selected state', () => {
+    it("should render selected state", () => {
       const target = createMockTarget();
       renderWithProviders(
         <TargetCard
@@ -127,12 +127,12 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       expect(document.body).toBeInTheDocument();
     });
 
-    it('should render active state', () => {
+    it("should render active state", () => {
       const target = createMockTarget();
       renderWithProviders(
         <TargetCard
@@ -142,14 +142,14 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       expect(document.body).toBeInTheDocument();
     });
   });
 
-  describe('Status Display', () => {
-    it('should display created status', () => {
+  describe("Status Display", () => {
+    it("should display created status", () => {
       const target = createMockTarget({ status: SequenceEntityStatus.CREATED });
       renderWithProviders(
         <TargetCard
@@ -159,12 +159,12 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       expect(document.body).toBeInTheDocument();
     });
 
-    it('should display running status', () => {
+    it("should display running status", () => {
       const target = createMockTarget({ status: SequenceEntityStatus.RUNNING });
       renderWithProviders(
         <TargetCard
@@ -174,13 +174,15 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       expect(document.body).toBeInTheDocument();
     });
 
-    it('should display finished status', () => {
-      const target = createMockTarget({ status: SequenceEntityStatus.FINISHED });
+    it("should display finished status", () => {
+      const target = createMockTarget({
+        status: SequenceEntityStatus.FINISHED,
+      });
       renderWithProviders(
         <TargetCard
           target={target}
@@ -189,14 +191,14 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       expect(document.body).toBeInTheDocument();
     });
   });
 
-  describe('Progress Display', () => {
-    it('should show progress for exposures', () => {
+  describe("Progress Display", () => {
+    it("should show progress for exposures", () => {
       const target = createMockTarget();
       renderWithProviders(
         <TargetCard
@@ -206,15 +208,15 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       // Should show progress indicator
       expect(document.body).toBeInTheDocument();
     });
   });
 
-  describe('Action Buttons', () => {
-    it('should have action buttons', () => {
+  describe("Action Buttons", () => {
+    it("should have action buttons", () => {
       const target = createMockTarget();
       renderWithProviders(
         <TargetCard
@@ -224,15 +226,15 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
-      const buttons = screen.getAllByRole('button');
+      const buttons = screen.getAllByRole("button");
       expect(buttons.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Accessibility', () => {
-    it('should have accessible structure', () => {
+  describe("Accessibility", () => {
+    it("should have accessible structure", () => {
       const target = createMockTarget();
       renderWithProviders(
         <TargetCard
@@ -242,7 +244,7 @@ describe('TargetCard', () => {
           index={0}
           totalTargets={1}
           {...mockHandlers}
-        />
+        />,
       );
       expect(document.body).toBeInTheDocument();
     });

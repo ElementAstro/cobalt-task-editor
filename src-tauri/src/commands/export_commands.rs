@@ -6,11 +6,10 @@ use tauri::command;
 
 use crate::models::{SimpleSequence, SimpleTarget};
 use crate::services::export_service::{
-    ExportOptions, ExportFormat, CoordinateFormat, ExportResult,
-    export_sequence, export_to_csv, export_to_telescopius_csv,
-    export_to_xml, export_to_apt_xml, export_to_stellarium,
-    export_to_voyager, export_to_nina_target_set, export_to_json,
-    generate_csv_content, generate_xml_content, format_ra, format_dec,
+    export_sequence, export_to_apt_xml, export_to_csv, export_to_json, export_to_nina_target_set,
+    export_to_stellarium, export_to_telescopius_csv, export_to_voyager, export_to_xml, format_dec,
+    format_ra, generate_csv_content, generate_xml_content, CoordinateFormat, ExportFormat,
+    ExportOptions, ExportResult,
 };
 
 /// Export sequence with options
@@ -69,18 +68,14 @@ pub async fn export_to_xml_format(
 
 /// Export sequence to APT XML format
 #[command]
-pub async fn export_to_apt_format(
-    sequence: SimpleSequence,
-) -> Result<ExportResult, String> {
+pub async fn export_to_apt_format(sequence: SimpleSequence) -> Result<ExportResult, String> {
     let options = ExportOptions::default();
     Ok(export_to_apt_xml(&sequence, &options))
 }
 
 /// Export sequence to Stellarium skylist
 #[command]
-pub async fn export_to_stellarium_format(
-    sequence: SimpleSequence,
-) -> Result<ExportResult, String> {
+pub async fn export_to_stellarium_format(sequence: SimpleSequence) -> Result<ExportResult, String> {
     let options = ExportOptions::default();
     Ok(export_to_stellarium(&sequence, &options))
 }
@@ -112,9 +107,7 @@ pub async fn export_to_nina_target_set_format(
 
 /// Export sequence to JSON
 #[command]
-pub async fn export_to_json_format(
-    sequence: SimpleSequence,
-) -> Result<ExportResult, String> {
+pub async fn export_to_json_format(sequence: SimpleSequence) -> Result<ExportResult, String> {
     Ok(export_to_json(&sequence))
 }
 
@@ -131,7 +124,7 @@ pub async fn generate_targets_csv(
         "colon" => CoordinateFormat::SexagesimalColon,
         _ => CoordinateFormat::Sexagesimal,
     };
-    
+
     let options = ExportOptions {
         format: ExportFormat::Csv,
         include_exposures: false,
@@ -140,7 +133,7 @@ pub async fn generate_targets_csv(
         decimal_places,
         coordinate_format: coord_format,
     };
-    
+
     Ok(generate_csv_content(&targets, &options))
 }
 
@@ -157,7 +150,7 @@ pub async fn generate_targets_xml(
         "colon" => CoordinateFormat::SexagesimalColon,
         _ => CoordinateFormat::Sexagesimal,
     };
-    
+
     let options = ExportOptions {
         format: ExportFormat::Xml,
         include_exposures: false,
@@ -166,7 +159,7 @@ pub async fn generate_targets_xml(
         decimal_places,
         coordinate_format: coord_format,
     };
-    
+
     Ok(generate_xml_content(&targets, &options))
 }
 
@@ -178,11 +171,11 @@ pub async fn export_sequence_to_file(
     options: ExportOptions,
 ) -> Result<(), String> {
     let result = export_sequence(&sequence, &options);
-    
+
     if !result.success {
         return Err(result.errors.join(", "));
     }
-    
+
     tokio::fs::write(&path, result.content)
         .await
         .map_err(|e| format!("Failed to write file: {}", e))
@@ -206,7 +199,7 @@ pub async fn export_targets_to_file(
         }
         _ => return Err(format!("Unsupported format: {}", format)),
     };
-    
+
     tokio::fs::write(&path, content)
         .await
         .map_err(|e| format!("Failed to write file: {}", e))
@@ -214,6 +207,7 @@ pub async fn export_targets_to_file(
 
 /// Format coordinates for display
 #[command]
+#[allow(clippy::too_many_arguments)]
 pub async fn format_coordinates(
     ra_hours: i32,
     ra_minutes: i32,
@@ -234,14 +228,14 @@ pub async fn format_coordinates(
         dec_seconds,
         negative_dec,
     };
-    
+
     let coord_format = match format.to_lowercase().as_str() {
         "decimal" => CoordinateFormat::Decimal,
         "degrees" => CoordinateFormat::DecimalDegrees,
         "colon" => CoordinateFormat::SexagesimalColon,
         _ => CoordinateFormat::Sexagesimal,
     };
-    
+
     Ok((
         format_ra(&coords, coord_format, decimal_places),
         format_dec(&coords, coord_format, decimal_places),
@@ -252,14 +246,46 @@ pub async fn format_coordinates(
 #[command]
 pub async fn get_export_formats() -> Result<Vec<(String, String, String)>, String> {
     Ok(vec![
-        ("csv".to_string(), "CSV".to_string(), "Comma-separated values".to_string()),
-        ("csv_telescopius".to_string(), "Telescopius CSV".to_string(), "Telescopius-compatible CSV".to_string()),
-        ("xml".to_string(), "XML".to_string(), "Generic XML format".to_string()),
-        ("xml_apt".to_string(), "APT XML".to_string(), "Astro Photography Tool format".to_string()),
-        ("stellarium".to_string(), "Stellarium".to_string(), "Stellarium skylist format".to_string()),
-        ("voyager".to_string(), "Voyager".to_string(), "Voyager sequence format".to_string()),
-        ("nina_target_set".to_string(), "NINA Target Set".to_string(), "NINA Target Set JSON".to_string()),
-        ("json".to_string(), "JSON".to_string(), "Full sequence JSON".to_string()),
+        (
+            "csv".to_string(),
+            "CSV".to_string(),
+            "Comma-separated values".to_string(),
+        ),
+        (
+            "csv_telescopius".to_string(),
+            "Telescopius CSV".to_string(),
+            "Telescopius-compatible CSV".to_string(),
+        ),
+        (
+            "xml".to_string(),
+            "XML".to_string(),
+            "Generic XML format".to_string(),
+        ),
+        (
+            "xml_apt".to_string(),
+            "APT XML".to_string(),
+            "Astro Photography Tool format".to_string(),
+        ),
+        (
+            "stellarium".to_string(),
+            "Stellarium".to_string(),
+            "Stellarium skylist format".to_string(),
+        ),
+        (
+            "voyager".to_string(),
+            "Voyager".to_string(),
+            "Voyager sequence format".to_string(),
+        ),
+        (
+            "nina_target_set".to_string(),
+            "NINA Target Set".to_string(),
+            "NINA Target Set JSON".to_string(),
+        ),
+        (
+            "json".to_string(),
+            "JSON".to_string(),
+            "Full sequence JSON".to_string(),
+        ),
     ])
 }
 
@@ -267,9 +293,25 @@ pub async fn get_export_formats() -> Result<Vec<(String, String, String)>, Strin
 #[command]
 pub async fn get_coordinate_formats() -> Result<Vec<(String, String, String)>, String> {
     Ok(vec![
-        ("sexagesimal".to_string(), "Sexagesimal".to_string(), "00h 42m 44.3s / +41° 16' 09.0\"".to_string()),
-        ("colon".to_string(), "Colon-separated".to_string(), "00:42:44.3 / +41:16:09.0".to_string()),
-        ("decimal".to_string(), "Decimal".to_string(), "0.712 / 41.269 (hours/degrees)".to_string()),
-        ("degrees".to_string(), "Decimal Degrees".to_string(), "10.68 / 41.269 (degrees)".to_string()),
+        (
+            "sexagesimal".to_string(),
+            "Sexagesimal".to_string(),
+            "00h 42m 44.3s / +41° 16' 09.0\"".to_string(),
+        ),
+        (
+            "colon".to_string(),
+            "Colon-separated".to_string(),
+            "00:42:44.3 / +41:16:09.0".to_string(),
+        ),
+        (
+            "decimal".to_string(),
+            "Decimal".to_string(),
+            "0.712 / 41.269 (hours/degrees)".to_string(),
+        ),
+        (
+            "degrees".to_string(),
+            "Decimal Degrees".to_string(),
+            "10.68 / 41.269 (degrees)".to_string(),
+        ),
     ])
 }

@@ -2,7 +2,7 @@
 
 use tauri::command;
 
-use crate::models::{SimpleTarget, SimpleExposure, EditorSequenceItem};
+use crate::models::{EditorSequenceItem, SimpleExposure, SimpleTarget};
 use crate::services::clipboard_service::{self, ClipboardContent};
 
 /// Copy target to clipboard
@@ -117,12 +117,15 @@ pub fn paste_sequence_item() -> Option<EditorSequenceItem> {
 #[command]
 pub fn paste_sequence_items() -> Option<Vec<EditorSequenceItem>> {
     match clipboard_service::get_clipboard_content()? {
-        ClipboardContent::SequenceItems(items) => {
-            Some(items.into_iter().map(|mut item| {
-                regenerate_item_ids(&mut item);
-                item
-            }).collect())
-        }
+        ClipboardContent::SequenceItems(items) => Some(
+            items
+                .into_iter()
+                .map(|mut item| {
+                    regenerate_item_ids(&mut item);
+                    item
+                })
+                .collect(),
+        ),
         ClipboardContent::SequenceItem(mut item) => {
             regenerate_item_ids(&mut item);
             Some(vec![item])
@@ -135,19 +138,19 @@ pub fn paste_sequence_items() -> Option<Vec<EditorSequenceItem>> {
 fn regenerate_item_ids(item: &mut EditorSequenceItem) {
     item.id = uuid::Uuid::new_v4().to_string();
     item.status = crate::models::SequenceEntityStatus::Created;
-    
+
     if let Some(items) = &mut item.items {
         for nested in items {
             regenerate_item_ids(nested);
         }
     }
-    
+
     if let Some(conditions) = &mut item.conditions {
         for condition in conditions {
             condition.id = uuid::Uuid::new_v4().to_string();
         }
     }
-    
+
     if let Some(triggers) = &mut item.triggers {
         for trigger in triggers {
             trigger.id = uuid::Uuid::new_v4().to_string();

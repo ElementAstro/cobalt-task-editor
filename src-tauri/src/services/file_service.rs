@@ -44,7 +44,7 @@ pub async fn write_file(path: &Path, contents: &str) -> Result<()> {
 pub async fn load_simple_sequence(path: &Path) -> Result<SimpleSequence> {
     let contents = read_file(path).await?;
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-    
+
     match extension.to_lowercase().as_str() {
         "json" => {
             let mut sequence = serializer::deserialize_simple_sequence_json(&contents)?;
@@ -62,17 +62,19 @@ pub async fn load_simple_sequence(path: &Path) -> Result<SimpleSequence> {
 /// Save simple sequence to file
 pub async fn save_simple_sequence(path: &Path, sequence: &SimpleSequence) -> Result<()> {
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-    
+
     let contents = match extension.to_lowercase().as_str() {
         "json" => serializer::serialize_simple_sequence_json(sequence)?,
         "csv" => serializer::export_to_csv(sequence)?,
         "xml" | "ninatargetset" => serializer::export_to_xml(sequence)?,
-        _ => return Err(FileError::InvalidFormat(format!(
-            "Unsupported file format: {}",
-            extension
-        ))),
+        _ => {
+            return Err(FileError::InvalidFormat(format!(
+                "Unsupported file format: {}",
+                extension
+            )))
+        }
     };
-    
+
     write_file(path, &contents).await
 }
 
@@ -99,16 +101,25 @@ pub async fn import_targets_from_csv(path: &Path) -> Result<Vec<SimpleTarget>> {
 /// Get file info
 pub async fn get_file_info(path: &Path) -> Result<FileInfo> {
     let metadata = fs::metadata(path).await?;
-    
+
     Ok(FileInfo {
         path: path.display().to_string(),
-        name: path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string(),
-        extension: path.extension().and_then(|e| e.to_str()).unwrap_or("").to_string(),
+        name: path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+            .to_string(),
+        extension: path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_string(),
         size: metadata.len(),
         is_directory: metadata.is_dir(),
-        modified: metadata.modified().ok().map(|t| {
-            chrono::DateTime::<chrono::Utc>::from(t)
-        }),
+        modified: metadata
+            .modified()
+            .ok()
+            .map(chrono::DateTime::<chrono::Utc>::from),
     })
 }
 
@@ -128,10 +139,10 @@ pub struct FileInfo {
 pub async fn list_directory(path: &Path, extensions: Option<&[&str]>) -> Result<Vec<FileInfo>> {
     let mut entries = fs::read_dir(path).await?;
     let mut files = Vec::new();
-    
+
     while let Some(entry) = entries.next_entry().await? {
         let entry_path = entry.path();
-        
+
         // Filter by extension if specified
         if let Some(exts) = extensions {
             if let Some(ext) = entry_path.extension().and_then(|e| e.to_str()) {
@@ -142,21 +153,19 @@ pub async fn list_directory(path: &Path, extensions: Option<&[&str]>) -> Result<
                 continue;
             }
         }
-        
+
         if let Ok(info) = get_file_info(&entry_path).await {
             files.push(info);
         }
     }
-    
+
     // Sort: directories first, then by name
-    files.sort_by(|a, b| {
-        match (a.is_directory, b.is_directory) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-        }
+    files.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
-    
+
     Ok(files)
 }
 
