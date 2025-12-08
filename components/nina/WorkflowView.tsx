@@ -43,6 +43,8 @@ import {
   createSequenceItem,
   createCondition,
   createTrigger,
+  findContainerIdForCondition,
+  findContainerIdForTrigger,
 } from "@/lib/nina/utils";
 import { isContainerType } from "@/lib/nina/constants";
 import {
@@ -218,49 +220,15 @@ function WorkflowViewInner() {
           deleteItem(selectedItemId);
         } else if (selectedConditionId) {
           event.preventDefault();
-          // Find container for the condition
-          const findContainerId = (
-            items: typeof sequence.startItems,
-          ): string | null => {
-            for (const item of items) {
-              if (item.conditions?.some((c) => c.id === selectedConditionId)) {
-                return item.id;
-              }
-              if (item.items) {
-                const found = findContainerId(item.items);
-                if (found) return found;
-              }
-            }
-            return null;
-          };
-          const containerId =
-            findContainerId(sequence.startItems) ||
-            findContainerId(sequence.targetItems) ||
-            findContainerId(sequence.endItems);
+          const allItems = [...sequence.startItems, ...sequence.targetItems, ...sequence.endItems];
+          const containerId = findContainerIdForCondition(allItems, selectedConditionId);
           if (containerId) {
             deleteCondition(containerId, selectedConditionId);
           }
         } else if (selectedTriggerId) {
           event.preventDefault();
-          // Find container for the trigger
-          const findContainerId = (
-            items: typeof sequence.startItems,
-          ): string | null => {
-            for (const item of items) {
-              if (item.triggers?.some((t) => t.id === selectedTriggerId)) {
-                return item.id;
-              }
-              if (item.items) {
-                const found = findContainerId(item.items);
-                if (found) return found;
-              }
-            }
-            return null;
-          };
-          const containerId =
-            findContainerId(sequence.startItems) ||
-            findContainerId(sequence.targetItems) ||
-            findContainerId(sequence.endItems);
+          const allItems = [...sequence.startItems, ...sequence.targetItems, ...sequence.endItems];
+          const containerId = findContainerIdForTrigger(allItems, selectedTriggerId);
           if (containerId) {
             deleteTrigger(containerId, selectedTriggerId);
           }
@@ -554,51 +522,17 @@ function WorkflowViewInner() {
   const handleContextMenuDelete = useCallback(() => {
     if (!contextMenu) return;
 
+    const allItems = [...sequence.startItems, ...sequence.targetItems, ...sequence.endItems];
+
     if (contextMenu.nodeType === "item") {
       deleteItem(contextMenu.nodeId);
     } else if (contextMenu.nodeType === "condition") {
-      // Find container for the condition
-      const findContainerId = (
-        items: typeof sequence.startItems,
-      ): string | null => {
-        for (const item of items) {
-          if (item.conditions?.some((c) => c.id === contextMenu.nodeId)) {
-            return item.id;
-          }
-          if (item.items) {
-            const found = findContainerId(item.items);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const containerId =
-        findContainerId(sequence.startItems) ||
-        findContainerId(sequence.targetItems) ||
-        findContainerId(sequence.endItems);
+      const containerId = findContainerIdForCondition(allItems, contextMenu.nodeId);
       if (containerId) {
         deleteCondition(containerId, contextMenu.nodeId);
       }
     } else if (contextMenu.nodeType === "trigger") {
-      // Find container for the trigger
-      const findContainerId = (
-        items: typeof sequence.startItems,
-      ): string | null => {
-        for (const item of items) {
-          if (item.triggers?.some((t) => t.id === contextMenu.nodeId)) {
-            return item.id;
-          }
-          if (item.items) {
-            const found = findContainerId(item.items);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const containerId =
-        findContainerId(sequence.startItems) ||
-        findContainerId(sequence.targetItems) ||
-        findContainerId(sequence.endItems);
+      const containerId = findContainerIdForTrigger(allItems, contextMenu.nodeId);
       if (containerId) {
         deleteTrigger(containerId, contextMenu.nodeId);
       }

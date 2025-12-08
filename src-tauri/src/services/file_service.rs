@@ -136,10 +136,12 @@ pub struct FileInfo {
 }
 
 /// List files in directory
+/// Optimized: Collect paths first, then process in parallel using tokio::spawn
 pub async fn list_directory(path: &Path, extensions: Option<&[&str]>) -> Result<Vec<FileInfo>> {
     let mut entries = fs::read_dir(path).await?;
-    let mut files = Vec::new();
+    let mut paths = Vec::new();
 
+    // Collect all paths first
     while let Some(entry) = entries.next_entry().await? {
         let entry_path = entry.path();
 
@@ -154,13 +156,20 @@ pub async fn list_directory(path: &Path, extensions: Option<&[&str]>) -> Result<
             }
         }
 
-        if let Ok(info) = get_file_info(&entry_path).await {
-            files.push(info);
-        }
+        paths.push(entry_path);
     }
 
+    // Process paths concurrently using join_all
+    let futures: Vec<_> = paths
+        .into_iter()
+        .map(|p| async move { get_file_info(&p).await.ok() })
+        .collect();
+
+    let results = futures::future::join_all(futures).await;
+    let mut files: Vec<FileInfo> = results.into_iter().flatten().collect();
+
     // Sort: directories first, then by name
-    files.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+    files.sort_unstable_by(|a, b| match (a.is_directory, b.is_directory) {
         (true, false) => std::cmp::Ordering::Less,
         (false, true) => std::cmp::Ordering::Greater,
         _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),

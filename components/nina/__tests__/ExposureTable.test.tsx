@@ -7,12 +7,25 @@ import { render, screen } from "@testing-library/react";
 import { ExposureTable } from "../ExposureTable";
 import { I18nProvider } from "@/lib/i18n/context";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useSimpleSequenceStore } from "@/lib/nina/simple-sequence-store";
 import {
   SimpleExposure,
   SequenceEntityStatus,
   ImageType,
 } from "@/lib/nina/simple-sequence-types";
+
+// Mock the store
+jest.mock("@/lib/nina/simple-sequence-store", () => ({
+  useSimpleSequenceStore: () => ({
+    addExposure: jest.fn(),
+    deleteExposure: jest.fn(),
+    duplicateExposure: jest.fn(),
+    moveExposureUp: jest.fn(),
+    moveExposureDown: jest.fn(),
+    updateExposure: jest.fn(),
+    resetExposureProgress: jest.fn(),
+    resetAllExposuresProgress: jest.fn(),
+  }),
+}));
 
 // Helper to wrap component with required providers
 const renderWithProviders = (component: React.ReactNode) => {
@@ -43,10 +56,8 @@ const createMockExposure = (
   ...overrides,
 });
 
-// Reset store before each test
 beforeEach(() => {
-  const store = useSimpleSequenceStore.getState();
-  store.newSequence();
+  jest.clearAllMocks();
 });
 
 describe("ExposureTable", () => {
@@ -142,6 +153,66 @@ describe("ExposureTable", () => {
 
       const buttons = screen.getAllByRole("button");
       expect(buttons.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Toolbar actions", () => {
+    it("renders toolbar buttons", () => {
+      renderWithProviders(<ExposureTable targetId="target-1" exposures={[]} />);
+
+      const buttons = screen.getAllByRole("button");
+      expect(buttons.length).toBeGreaterThan(0);
+    });
+
+    it("renders with exposures", () => {
+      const exposures = [
+        createMockExposure({ id: "exp-1" }),
+        createMockExposure({ id: "exp-2" }),
+      ];
+
+      renderWithProviders(
+        <ExposureTable targetId="target-1" exposures={exposures} />,
+      );
+
+      expect(document.body).toBeInTheDocument();
+    });
+  });
+
+  describe("Row interactions", () => {
+    it("renders exposure rows with inputs", () => {
+      const exposures = [createMockExposure({ id: "exp-1" })];
+
+      renderWithProviders(
+        <ExposureTable targetId="target-1" exposures={exposures} />,
+      );
+
+      const inputs = screen.getAllByRole("spinbutton");
+      expect(inputs.length).toBeGreaterThan(0);
+    });
+
+    it("renders checkboxes for exposures", () => {
+      const exposures = [createMockExposure({ id: "exp-1" })];
+
+      renderWithProviders(
+        <ExposureTable targetId="target-1" exposures={exposures} />,
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+      expect(checkboxes.length).toBeGreaterThan(0);
+    });
+
+    it("renders multiple exposure rows", () => {
+      const exposures = [
+        createMockExposure({ id: "exp-1" }),
+        createMockExposure({ id: "exp-2" }),
+      ];
+
+      renderWithProviders(
+        <ExposureTable targetId="target-1" exposures={exposures} />,
+      );
+
+      const rows = screen.getAllByRole("row");
+      expect(rows.length).toBeGreaterThan(1);
     });
   });
 });

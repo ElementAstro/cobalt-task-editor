@@ -965,65 +965,80 @@ export const useSequenceEditorStore = create<SequenceEditorStore>()(
       get().moveItem(itemId, targetArea, null, 0);
     },
 
-    // Toggle enabled/disabled for all selected items
+    // Toggle enabled/disabled for all selected items - batch update for performance
     toggleSelectedItemsEnabled: () => {
       const { selectedItemIds } = get();
       if (selectedItemIds.length === 0) return;
 
       get().saveToHistory();
 
-      selectedItemIds.forEach((itemId) => {
-        const item = get().getItemById(itemId);
-        if (item) {
-          get().updateItem(itemId, {
-            status: item.status === "DISABLED" ? "CREATED" : "DISABLED",
-          });
-        }
+      set((state) => {
+        const toggleInItems = (items: EditorSequenceItem[]) => {
+          for (const item of items) {
+            if (selectedItemIds.includes(item.id)) {
+              item.status = item.status === "DISABLED" ? "CREATED" : "DISABLED";
+            }
+            if (item.items) toggleInItems(item.items);
+          }
+        };
+
+        toggleInItems(state.sequence.startItems);
+        toggleInItems(state.sequence.targetItems);
+        toggleInItems(state.sequence.endItems);
+        state.isDirty = true;
       });
     },
 
-    // Expand all items in the current area
+    // Expand all items in the current area - batch update for performance
     expandAllItems: () => {
-      const { sequence, activeArea } = get();
-      const items =
-        activeArea === "start"
-          ? sequence.startItems
-          : activeArea === "target"
-            ? sequence.targetItems
-            : sequence.endItems;
+      get().saveToHistory();
 
-      const expandRecursively = (items: EditorSequenceItem[]) => {
-        items.forEach((item) => {
-          if (item.items !== undefined) {
-            get().updateItem(item.id, { isExpanded: true });
-            if (item.items) expandRecursively(item.items);
+      set((state) => {
+        const items =
+          state.activeArea === "start"
+            ? state.sequence.startItems
+            : state.activeArea === "target"
+              ? state.sequence.targetItems
+              : state.sequence.endItems;
+
+        const expandRecursively = (items: EditorSequenceItem[]) => {
+          for (const item of items) {
+            if (item.items !== undefined) {
+              item.isExpanded = true;
+              if (item.items) expandRecursively(item.items);
+            }
           }
-        });
-      };
+        };
 
-      expandRecursively(items);
+        expandRecursively(items);
+        state.isDirty = true;
+      });
     },
 
-    // Collapse all items in the current area
+    // Collapse all items in the current area - batch update for performance
     collapseAllItems: () => {
-      const { sequence, activeArea } = get();
-      const items =
-        activeArea === "start"
-          ? sequence.startItems
-          : activeArea === "target"
-            ? sequence.targetItems
-            : sequence.endItems;
+      get().saveToHistory();
 
-      const collapseRecursively = (items: EditorSequenceItem[]) => {
-        items.forEach((item) => {
-          if (item.items !== undefined) {
-            get().updateItem(item.id, { isExpanded: false });
-            if (item.items) collapseRecursively(item.items);
+      set((state) => {
+        const items =
+          state.activeArea === "start"
+            ? state.sequence.startItems
+            : state.activeArea === "target"
+              ? state.sequence.targetItems
+              : state.sequence.endItems;
+
+        const collapseRecursively = (items: EditorSequenceItem[]) => {
+          for (const item of items) {
+            if (item.items !== undefined) {
+              item.isExpanded = false;
+              if (item.items) collapseRecursively(item.items);
+            }
           }
-        });
-      };
+        };
 
-      collapseRecursively(items);
+        collapseRecursively(items);
+        state.isDirty = true;
+      });
     },
 
     setFilterCategory: (category) => {

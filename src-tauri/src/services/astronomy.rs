@@ -124,6 +124,7 @@ const SYNODIC_MONTH: f64 = 29.530588853;
 // ============================================================================
 
 /// Convert DateTime to Julian Day
+#[inline]
 pub fn datetime_to_jd(dt: DateTime<Utc>) -> f64 {
     let year = dt.year();
     let month = dt.month() as i32;
@@ -187,6 +188,7 @@ pub fn jd_to_datetime(jd: f64) -> DateTime<Utc> {
 // ============================================================================
 
 /// Calculate Greenwich Mean Sidereal Time in degrees
+#[inline]
 pub fn gmst(jd: f64) -> f64 {
     let t = (jd - J2000) / 36525.0;
     let gmst = 280.46061837 + 360.98564736629 * (jd - J2000) + 0.000387933 * t * t
@@ -195,6 +197,7 @@ pub fn gmst(jd: f64) -> f64 {
 }
 
 /// Calculate Local Sidereal Time in degrees
+#[inline]
 pub fn lst(jd: f64, longitude: f64) -> f64 {
     (gmst(jd) + longitude).rem_euclid(360.0)
 }
@@ -204,6 +207,7 @@ pub fn lst(jd: f64, longitude: f64) -> f64 {
 // ============================================================================
 
 /// Calculate altitude and azimuth from RA/Dec
+#[inline]
 pub fn ra_dec_to_alt_az(
     ra_hours: f64,
     dec_degrees: f64,
@@ -243,6 +247,7 @@ pub fn hour_angle(ra_hours: f64, longitude: f64, jd: f64) -> f64 {
 }
 
 /// Calculate air mass (Kasten-Young formula)
+#[inline]
 pub fn air_mass(altitude: f64) -> Option<f64> {
     if altitude <= 0.0 {
         return None;

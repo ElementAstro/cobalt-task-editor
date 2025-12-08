@@ -40,8 +40,11 @@ pub fn deserialize_editor_sequence_json(json: &str) -> Result<EditorSequence> {
 }
 
 /// Export simple sequence to CSV (Telescopius format)
+/// Optimized: Pre-allocate string capacity based on target count
 pub fn export_to_csv(sequence: &SimpleSequence) -> Result<String> {
-    let mut output = String::new();
+    // Estimate ~100 bytes per target for CSV row
+    let estimated_size = 50 + sequence.targets.len() * 100;
+    let mut output = String::with_capacity(estimated_size);
     output.push_str("Pane,RA,Dec,Position Angle (East)\n");
 
     for target in &sequence.targets {
@@ -170,8 +173,12 @@ pub fn import_from_csv(csv_content: &str) -> Result<Vec<SimpleTarget>> {
 }
 
 /// Export simple sequence to XML (NINA target set format)
+/// Optimized: Pre-allocate string capacity based on target and exposure count
 pub fn export_to_xml(sequence: &SimpleSequence) -> Result<String> {
-    let mut xml = String::new();
+    // Estimate ~500 bytes per target + ~300 bytes per exposure
+    let exposure_count: usize = sequence.targets.iter().map(|t| t.exposures.len()).sum();
+    let estimated_size = 500 + sequence.targets.len() * 500 + exposure_count * 300;
+    let mut xml = String::with_capacity(estimated_size);
     xml.push_str(r#"<?xml version="1.0" encoding="utf-8"?>"#);
     xml.push('\n');
     xml.push_str(r#"<ArrayOfCaptureSequenceList xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">"#);

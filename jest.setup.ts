@@ -6,6 +6,13 @@
 import "@testing-library/jest-dom";
 import React from "react";
 
+// Mock ResizeObserver
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
 // Mock Next.js Image component
 jest.mock("next/image", () => ({
   __esModule: true,

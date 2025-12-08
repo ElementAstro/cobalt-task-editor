@@ -436,3 +436,45 @@ export function getTypeCategory(fullType: string): string {
   }
   return "Unknown";
 }
+
+// ============================================================================
+// Container Search Utilities
+// ============================================================================
+
+/**
+ * Find the container ID that holds a specific condition
+ */
+export function findContainerIdForCondition(
+  items: EditorSequenceItem[],
+  conditionId: string,
+): string | null {
+  for (const item of items) {
+    if (item.conditions?.some((c) => c.id === conditionId)) {
+      return item.id;
+    }
+    if (item.items) {
+      const found = findContainerIdForCondition(item.items, conditionId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Find the container ID that holds a specific trigger
+ */
+export function findContainerIdForTrigger(
+  items: EditorSequenceItem[],
+  triggerId: string,
+): string | null {
+  for (const item of items) {
+    if (item.triggers?.some((t) => t.id === triggerId)) {
+      return item.id;
+    }
+    if (item.items) {
+      const found = findContainerIdForTrigger(item.items, triggerId);
+      if (found) return found;
+    }
+  }
+  return null;
+}

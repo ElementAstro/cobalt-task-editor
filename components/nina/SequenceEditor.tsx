@@ -7,22 +7,10 @@ import {
   Undo2,
   Redo2,
   Plus,
-  ChevronLeft,
-  ChevronRight,
-  Keyboard,
-  Menu,
-  Package,
-  Settings2,
   Sparkles,
   Target,
   List,
   GitBranch,
-  ChevronsUpDown,
-  ChevronsDownUp,
-  ClipboardPaste,
-  BarChart3,
-  Copy,
-  Scissors,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -33,30 +21,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
   useSequenceEditorStore,
   selectCanUndo,
   selectCanRedo,
@@ -65,14 +29,11 @@ import {
 import { exportToNINA, importFromNINA } from "@/lib/nina/serializer";
 import { useI18n } from "@/lib/i18n";
 import { SequenceTree } from "./SequenceTree";
-import { SequenceToolbox } from "./SequenceToolbox";
-import { PropertyPanel } from "./PropertyPanel";
 import { WorkflowView } from "./WorkflowView";
 import { LanguageSelector } from "./LanguageSelector";
 import { OnboardingTour, TourHelpButton } from "./OnboardingTour";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Kbd } from "@/components/ui/kbd";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -83,15 +44,21 @@ import {
   selectEditorMode,
 } from "@/lib/nina/multi-sequence-store";
 import { useShallow } from "zustand/react/shallow";
+
+// Editor sub-components
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ToggleLeft, ToggleRight } from "lucide-react";
+  EditorModeToggle,
+  KeyboardShortcutsDialog,
+  MobileMenu,
+  ConfirmNewDialog,
+  ToolboxSidebar,
+  PropertySidebar,
+  MobileToolboxSheet,
+  MobilePropertiesSheet,
+  ListViewToolbar,
+  MobileBottomNav,
+  StatusBar,
+} from "./editor";
 
 export function SequenceEditor() {
   const { t } = useI18n();
@@ -596,52 +563,17 @@ export function SequenceEditor() {
           {/* Right: Settings and Language */}
           <div className="flex items-center gap-0.5 sm:gap-1">
             {/* Editor Mode Toggle */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 px-2 gap-1.5">
-                  {editorMode === "normal" ? (
-                    <ToggleLeft className="w-4 h-4" />
-                  ) : (
-                    <ToggleRight className="w-4 h-4" />
-                  )}
-                  <span className="hidden lg:inline text-xs">
-                    {editorMode === "normal"
-                      ? t.editor.normalMode
-                      : t.editor.advancedMode}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  {t.editor.modeDescription}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setEditorMode("normal")}
-                  className={editorMode === "normal" ? "bg-accent" : ""}
-                >
-                  <ToggleLeft className="w-4 h-4 mr-2" />
-                  <div className="flex flex-col">
-                    <span>{t.editor.normalMode}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {t.editor.normalModeDesc}
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setEditorMode("advanced")}
-                  className={editorMode === "advanced" ? "bg-accent" : ""}
-                >
-                  <ToggleRight className="w-4 h-4 mr-2" />
-                  <div className="flex flex-col">
-                    <span>{t.editor.advancedMode}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {t.editor.advancedModeDesc}
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <EditorModeToggle
+              editorMode={editorMode}
+              onModeChange={setEditorMode}
+              translations={{
+                normalMode: t.editor.normalMode,
+                advancedMode: t.editor.advancedMode,
+                modeDescription: t.editor.modeDescription,
+                normalModeDesc: t.editor.normalModeDesc,
+                advancedModeDesc: t.editor.advancedModeDesc,
+              }}
+            />
 
             <Separator
               orientation="vertical"
@@ -671,166 +603,39 @@ export function SequenceEditor() {
             />
 
             {/* Mobile Menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="md:hidden h-8 w-8 p-0"
-                >
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="top" className="bg-card border-border">
-                <SheetHeader className="pb-2">
-                  <SheetTitle>{t.common.actions}</SheetTitle>
-                </SheetHeader>
-                <div className="grid grid-cols-2 gap-2 py-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      handleNew();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="justify-start h-11 text-sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2 shrink-0" />
-                    <span className="truncate">{t.editor.newSequence}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      handleImport();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="justify-start h-11 text-sm"
-                  >
-                    <Upload className="w-4 h-4 mr-2 shrink-0" />
-                    <span className="truncate">{t.editor.import}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      handleExport();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="justify-start h-11 text-sm"
-                  >
-                    <Download className="w-4 h-4 mr-2 shrink-0" />
-                    <span className="truncate">{t.editor.export}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      undo();
-                      setMobileMenuOpen(false);
-                    }}
-                    disabled={!canUndo}
-                    className="justify-start h-11 text-sm"
-                  >
-                    <Undo2 className="w-4 h-4 mr-2 shrink-0" />
-                    <span className="truncate">{t.editor.undo}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      redo();
-                      setMobileMenuOpen(false);
-                    }}
-                    disabled={!canRedo}
-                    className="justify-start h-11 text-sm col-span-2 sm:col-span-1"
-                  >
-                    <Redo2 className="w-4 h-4 mr-2 shrink-0" />
-                    <span className="truncate">{t.editor.redo}</span>
-                  </Button>
-                </div>
-                {/* Mobile Template Selector */}
-                <div className="pt-2 border-t border-border">
-                  <TemplateSelector activeTabId={activeTabId} />
-                </div>
-              </SheetContent>
-            </Sheet>
+            <MobileMenu
+              open={mobileMenuOpen}
+              onOpenChange={setMobileMenuOpen}
+              onNew={handleNew}
+              onImport={handleImport}
+              onExport={handleExport}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              activeTabId={activeTabId}
+              translations={{
+                actions: t.common.actions,
+                newSequence: t.editor.newSequence,
+                import: t.editor.import,
+                export: t.editor.export,
+                undo: t.editor.undo,
+                redo: t.editor.redo,
+              }}
+            />
 
             {/* Desktop: Keyboard Shortcuts */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden sm:flex h-8 w-8 p-0"
-                >
-                  <Keyboard className="w-4 h-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{t.shortcuts.title}</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-3 py-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {t.shortcuts.undo}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Kbd>Ctrl</Kbd>
-                      <span className="text-muted-foreground">+</span>
-                      <Kbd>Z</Kbd>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {t.shortcuts.redo}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Kbd>Ctrl</Kbd>
-                      <span className="text-muted-foreground">+</span>
-                      <Kbd>Y</Kbd>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {t.shortcuts.save}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Kbd>Ctrl</Kbd>
-                      <span className="text-muted-foreground">+</span>
-                      <Kbd>S</Kbd>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {t.shortcuts.open}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Kbd>Ctrl</Kbd>
-                      <span className="text-muted-foreground">+</span>
-                      <Kbd>O</Kbd>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {t.shortcuts.delete}
-                    </span>
-                    <Kbd>Delete</Kbd>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {t.shortcuts.duplicate}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Kbd>Ctrl</Kbd>
-                      <span className="text-muted-foreground">+</span>
-                      <Kbd>D</Kbd>
-                    </div>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <KeyboardShortcutsDialog
+              translations={{
+                title: t.shortcuts.title,
+                undo: t.shortcuts.undo,
+                redo: t.shortcuts.redo,
+                save: t.shortcuts.save,
+                open: t.shortcuts.open,
+                delete: t.shortcuts.delete,
+                duplicate: t.shortcuts.duplicate,
+              }}
+            />
 
             <ThemeToggle />
             <TourHelpButton />
@@ -839,86 +644,36 @@ export function SequenceEditor() {
         </header>
 
         {/* Confirm New Sequence Dialog */}
-        <AlertDialog open={confirmNewOpen} onOpenChange={setConfirmNewOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t.editor.unsavedChanges}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t.editor.confirmNew}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmNew}>
-                {t.common.confirm}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmNewDialog
+          open={confirmNewOpen}
+          onOpenChange={setConfirmNewOpen}
+          onConfirm={handleConfirmNew}
+          translations={{
+            unsavedChanges: t.editor.unsavedChanges,
+            confirmNew: t.editor.confirmNew,
+            cancel: t.common.cancel,
+            confirm: t.common.confirm,
+          }}
+        />
 
         {/* Main Content - Responsive */}
         <div className="flex flex-1 overflow-hidden relative">
           {/* Left Sidebar - Toolbox (Desktop) */}
-          <aside
-            data-tour="toolbox"
-            style={{ width: toolboxExpanded ? `${toolboxWidth}px` : "40px" }}
-            className={`hidden sm:flex flex-col bg-card border-r border-border transition-all duration-300 ease-out ${
-              toolboxExpanded ? "" : "w-10"
-            }`}
-          >
-            <div className="flex items-center justify-between px-2 py-1.5 border-b border-border shrink-0 min-h-[40px]">
-              <span
-                className={`text-sm font-medium truncate pl-1 transition-all duration-200 ${toolboxExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 absolute"}`}
-              >
-                {t.toolbox.title}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setToolboxExpanded(!toolboxExpanded)}
-                className="ml-auto h-7 w-7 shrink-0 transition-transform duration-200 hover:scale-105"
-                aria-label={
-                  toolboxExpanded ? "Collapse toolbox" : "Expand toolbox"
-                }
-              >
-                <ChevronLeft
-                  className={`w-4 h-4 transition-transform duration-200 ${toolboxExpanded ? "" : "rotate-180"}`}
-                />
-              </Button>
-            </div>
-            <div
-              className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin transition-opacity duration-200 ${toolboxExpanded ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-            >
-              <SequenceToolbox />
-            </div>
-          </aside>
-
-          {toolboxExpanded && (
-            <div
-              onMouseDown={() => setIsResizingLeft(true)}
-              className="hidden sm:block w-1.5 cursor-col-resize bg-border/20 hover:bg-border transition-colors"
-              role="separator"
-              aria-orientation="vertical"
-            />
-          )}
+          <ToolboxSidebar
+            expanded={toolboxExpanded}
+            width={toolboxWidth}
+            onExpandedChange={setToolboxExpanded}
+            onResizeStart={() => setIsResizingLeft(true)}
+            title={t.toolbox.title}
+          />
 
           {/* Mobile Toolbox Sheet */}
-          <Sheet open={mobileToolboxOpen} onOpenChange={setMobileToolboxOpen}>
-            <SheetContent
-              side="left"
-              className="w-[88vw] max-w-[340px] sm:hidden bg-card border-border p-0 flex flex-col"
-            >
-              <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
-                <SheetTitle className="text-base">{t.toolbox.title}</SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-hidden relative">
-                <SequenceToolbox
-                  onClose={handleCloseMobileToolbox}
-                  isMobile={true}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <MobileToolboxSheet
+            open={mobileToolboxOpen}
+            onOpenChange={setMobileToolboxOpen}
+            onClose={handleCloseMobileToolbox}
+            title={t.toolbox.title}
+          />
 
           {/* Center - Sequence Tree or Workflow View */}
           <main className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -984,130 +739,27 @@ export function SequenceEditor() {
                   </TabsList>
 
                   {/* List View Toolbar */}
-                  <div className="hidden sm:flex items-center gap-0.5">
-                    {/* Clipboard Actions */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={copySelectedItems}
-                          className="h-7 w-7 p-0"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {t.shortcuts?.copy || "Copy"} (Ctrl+C)
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={cutSelectedItems}
-                          className="h-7 w-7 p-0"
-                        >
-                          <Scissors className="w-3.5 h-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {t.shortcuts?.cut || "Cut"} (Ctrl+X)
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => pasteItems()}
-                          disabled={!hasClipboard()}
-                          className="h-7 w-7 p-0"
-                        >
-                          <ClipboardPaste className="w-3.5 h-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {t.shortcuts?.paste || "Paste"} (Ctrl+V)
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Separator orientation="vertical" className="h-5 mx-1" />
-
-                    {/* Expand/Collapse All */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={expandAllItems}
-                          className="h-7 w-7 p-0"
-                        >
-                          <ChevronsUpDown className="w-3.5 h-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {t.editor?.expandAll || "Expand All"} (Ctrl+E)
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={collapseAllItems}
-                          className="h-7 w-7 p-0"
-                        >
-                          <ChevronsDownUp className="w-3.5 h-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {t.editor?.collapseAll || "Collapse All"} (Ctrl+Shift+E)
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Separator orientation="vertical" className="h-5 mx-1" />
-
-                    {/* Statistics */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
-                          <BarChart3 className="w-3.5 h-3.5" />
-                          <span className="tabular-nums">
-                            {getSequenceStats().totalItems}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="text-xs space-y-1">
-                          <div>
-                            {t.editor?.startInstructions || "Start"}:{" "}
-                            {getSequenceStats().startItems}
-                          </div>
-                          <div>
-                            {t.editor?.targetInstructions || "Target"}:{" "}
-                            {getSequenceStats().targetItems}
-                          </div>
-                          <div>
-                            {t.editor?.endInstructions || "End"}:{" "}
-                            {getSequenceStats().endItems}
-                          </div>
-                          <div>
-                            {t.toolbox?.conditions || "Conditions"}:{" "}
-                            {getSequenceStats().conditions}
-                          </div>
-                          <div>
-                            {t.toolbox?.triggers || "Triggers"}:{" "}
-                            {getSequenceStats().triggers}
-                          </div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                  <ListViewToolbar
+                    onCopy={copySelectedItems}
+                    onCut={cutSelectedItems}
+                    onPaste={() => pasteItems()}
+                    canPaste={hasClipboard()}
+                    onExpandAll={expandAllItems}
+                    onCollapseAll={collapseAllItems}
+                    stats={getSequenceStats()}
+                    translations={{
+                      copy: t.shortcuts?.copy || "Copy",
+                      cut: t.shortcuts?.cut || "Cut",
+                      paste: t.shortcuts?.paste || "Paste",
+                      expandAll: t.editor?.expandAll || "Expand All",
+                      collapseAll: t.editor?.collapseAll || "Collapse All",
+                      start: t.editor?.startInstructions || "Start",
+                      target: t.editor?.targetInstructions || "Target",
+                      end: t.editor?.endInstructions || "End",
+                      conditions: t.toolbox?.conditions || "Conditions",
+                      triggers: t.toolbox?.triggers || "Triggers",
+                    }}
+                  />
                 </div>
 
                 {/* Sequence Tree - All tabs share the same content since SequenceTree reads activeArea from store */}
@@ -1132,160 +784,54 @@ export function SequenceEditor() {
           </main>
 
           {/* Right Sidebar - Property Panel (Desktop) */}
-          <aside
-            data-tour="properties"
-            style={{
-              width: propertyPanelExpanded ? `${propertyPanelWidth}px` : "40px",
-            }}
-            className={`hidden sm:flex flex-col bg-card border-l border-border transition-all duration-300 ease-out ${
-              propertyPanelExpanded ? "" : "w-10"
-            }`}
-          >
-            <div className="flex items-center justify-between px-2 py-1.5 border-b border-border shrink-0 min-h-[40px]">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setPropertyPanelExpanded(!propertyPanelExpanded)}
-                className="h-7 w-7 shrink-0 transition-transform duration-200 hover:scale-105"
-                aria-label={
-                  propertyPanelExpanded
-                    ? "Collapse properties"
-                    : "Expand properties"
-                }
-              >
-                <ChevronRight
-                  className={`w-4 h-4 transition-transform duration-200 ${propertyPanelExpanded ? "" : "rotate-180"}`}
-                />
-              </Button>
-              <span
-                className={`text-sm font-medium truncate pr-1 transition-all duration-200 ${propertyPanelExpanded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 absolute right-0"}`}
-              >
-                {t.properties.title}
-              </span>
-            </div>
-            <div
-              className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin transition-opacity duration-200 ${propertyPanelExpanded ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-            >
-              <PropertyPanel />
-            </div>
-          </aside>
-
-          {propertyPanelExpanded && (
-            <div
-              onMouseDown={() => setIsResizingRight(true)}
-              className="hidden sm:block w-1.5 cursor-col-resize bg-border/20 hover:bg-border transition-colors"
-              role="separator"
-              aria-orientation="vertical"
-            />
-          )}
+          <PropertySidebar
+            expanded={propertyPanelExpanded}
+            width={propertyPanelWidth}
+            onExpandedChange={setPropertyPanelExpanded}
+            onResizeStart={() => setIsResizingRight(true)}
+            title={t.properties.title}
+          />
 
           {/* Mobile Properties Sheet */}
-          <Sheet
+          <MobilePropertiesSheet
             open={mobilePropertiesOpen}
             onOpenChange={setMobilePropertiesOpen}
-          >
-            <SheetContent
-              side="right"
-              className="w-[88vw] max-w-[340px] sm:hidden bg-card border-border p-0 flex flex-col"
-            >
-              <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
-                <SheetTitle className="text-base">
-                  {t.properties.title}
-                </SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto scrollbar-thin">
-                <PropertyPanel />
-              </div>
-            </SheetContent>
-          </Sheet>
+            title={t.properties.title}
+          />
         </div>
 
-        {/* Mobile Bottom Navigation - Enhanced */}
-        <nav
-          className="sm:hidden flex items-center bg-card border-t border-border py-1 px-1 safe-area-inset-bottom"
-          aria-label="Mobile navigation"
-        >
-          {/* Toolbox Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobileToolboxOpen(true)}
-            className="flex-1 flex-col h-auto py-2 gap-0.5 min-w-0 rounded-lg active:bg-accent/70 touch-manipulation"
-            aria-label={t.toolbox.title}
-          >
-            <Package className="w-5 h-5" />
-            <span className="text-[10px] font-medium truncate">
-              {t.toolbox.title}
-            </span>
-          </Button>
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav
+          onToolboxOpen={() => setMobileToolboxOpen(true)}
+          onPropertiesOpen={() => setMobilePropertiesOpen(true)}
+          itemCount={
+            sequence.startItems.length +
+            sequence.targetItems.length +
+            sequence.endItems.length
+          }
+          hasSelection={!!selectedItemId}
+          translations={{
+            toolbox: t.toolbox.title,
+            properties: t.properties.title,
+            items: t.toolbox.items,
+          }}
+        />
 
-          <Separator orientation="vertical" className="h-10 mx-0.5" />
-
-          {/* Quick Info - Item Count */}
-          <div className="flex-1 flex flex-col items-center justify-center py-2 min-w-0">
-            <span className="text-sm font-semibold tabular-nums">
-              {sequence.startItems.length +
-                sequence.targetItems.length +
-                sequence.endItems.length}
-            </span>
-            <span className="text-[10px] text-muted-foreground truncate">
-              {t.toolbox.items}
-            </span>
-          </div>
-
-          <Separator orientation="vertical" className="h-10 mx-0.5" />
-
-          {/* Properties Button - with selection indicator */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobilePropertiesOpen(true)}
-            className={`flex-1 flex-col h-auto py-2 gap-0.5 min-w-0 relative rounded-lg active:bg-accent/70 touch-manipulation ${selectedItemId ? "text-primary" : ""}`}
-            aria-label={t.properties.title}
-          >
-            <Settings2 className="w-5 h-5" />
-            <span className="text-[10px] font-medium truncate">
-              {t.properties.title}
-            </span>
-            {selectedItemId && (
-              <span className="absolute top-1.5 right-1/4 w-2 h-2 bg-primary rounded-full animate-pulse" />
-            )}
-          </Button>
-        </nav>
-
-        {/* Status Bar - Responsive */}
-        <footer className="hidden sm:flex items-center justify-between px-3 lg:px-4 py-1 lg:py-1.5 bg-card border-t border-border text-[11px] lg:text-xs text-muted-foreground">
-          <div className="flex items-center gap-3 lg:gap-4">
-            <span className="flex items-center gap-1">
-              <span className="hidden md:inline">{t.toolbox.items}:</span>
-              <span className="font-medium tabular-nums">
-                {sequence.startItems.length +
-                  sequence.targetItems.length +
-                  sequence.endItems.length}
-              </span>
-            </span>
-            <Separator orientation="vertical" className="h-3" />
-            <span className="flex items-center gap-1">
-              <span className="hidden md:inline">{t.toolbox.triggers}:</span>
-              <span className="font-medium tabular-nums">
-                {sequence.globalTriggers.length}
-              </span>
-            </span>
-          </div>
-          <div className="truncate max-w-[200px] lg:max-w-none">
-            {selectedItemId ? (
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span className="hidden lg:inline">Selected:</span>
-                <code className="text-[10px] lg:text-xs">
-                  {selectedItemId.substring(0, 8)}...
-                </code>
-              </span>
-            ) : (
-              <span className="opacity-60">{t.properties.noSelection}</span>
-            )}
-          </div>
-        </footer>
+        {/* Status Bar */}
+        <StatusBar
+          itemCount={
+            sequence.startItems.length +
+            sequence.targetItems.length +
+            sequence.endItems.length
+          }
+          triggerCount={sequence.globalTriggers.length}
+          selectedItemId={selectedItemId}
+          translations={{
+            items: t.toolbox.items,
+            triggers: t.toolbox.triggers,
+            noSelection: t.properties.noSelection,
+          }}
+        />
 
         {/* Onboarding Tour */}
         <OnboardingTour />

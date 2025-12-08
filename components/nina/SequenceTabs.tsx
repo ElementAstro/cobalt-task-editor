@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import { X, Plus, Copy, FileText, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,7 @@ interface SequenceTabItemProps {
   onCloseOthers: () => void;
 }
 
-function SequenceTabItem({
+const SequenceTabItem = memo(function SequenceTabItem({
   tab,
   isActive,
   onSelect,
@@ -160,7 +160,7 @@ function SequenceTabItem({
       </AlertDialog>
     </>
   );
-}
+});
 
 export function SequenceTabs() {
   const { t } = useI18n();

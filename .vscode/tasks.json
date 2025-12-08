@@ -24,6 +24,26 @@
       }
     },
     {
+      "label": "ui:dev-inspect",
+      "type": "shell",
+      "isBackground": true,
+      "command": "pnpm",
+      "args": ["dev", "--", "--inspect"],
+      "problemMatcher": {
+        "pattern": {
+          "regexp": ".",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(Local:|ready started server on)"
+        }
+      }
+    },
+    {
       "label": "ui:dev-if-needed",
       "type": "shell",
       "isBackground": true,
@@ -73,6 +93,21 @@
       "type": "shell",
       "command": "pnpm",
       "args": ["build"]
+    },
+    {
+      "label": "ui:lint",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["lint"],
+      "problemMatcher": "$eslint-stylish",
+      "group": "build"
+    },
+    {
+      "label": "ui:test",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test", "--watch=false"],
+      "problemMatcher": []
     },
     {
       "label": "ui:stop",

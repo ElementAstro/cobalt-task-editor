@@ -127,13 +127,17 @@ pub fn calculate_altitude(
 }
 
 /// Convert DateTime to Julian Day
+/// Optimized: Use chrono's native methods instead of string formatting
+#[inline]
 fn datetime_to_julian_day(datetime: DateTime<Utc>) -> f64 {
-    let year = datetime.format("%Y").to_string().parse::<i32>().unwrap();
-    let month = datetime.format("%m").to_string().parse::<i32>().unwrap();
-    let day = datetime.format("%d").to_string().parse::<f64>().unwrap();
-    let hour = datetime.format("%H").to_string().parse::<f64>().unwrap();
-    let minute = datetime.format("%M").to_string().parse::<f64>().unwrap();
-    let second = datetime.format("%S").to_string().parse::<f64>().unwrap();
+    use chrono::{Datelike, Timelike};
+
+    let year = datetime.year();
+    let month = datetime.month() as i32;
+    let day = datetime.day() as f64;
+    let hour = datetime.hour() as f64;
+    let minute = datetime.minute() as f64;
+    let second = datetime.second() as f64;
 
     let day_fraction = day + (hour + minute / 60.0 + second / 3600.0) / 24.0;
 

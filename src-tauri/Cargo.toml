@@ -37,6 +37,7 @@ csv = "1.3"
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
+futures = "0.3"
 
 # Utilities
 log = "0.4"

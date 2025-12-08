@@ -31,6 +31,17 @@
       "cascadeTerminateToConfigurations": ["ui:dev"]
     },
     {
+      "name": "Next.js: debug server-side (attach)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"],
+      "preLaunchTask": "ui:dev-inspect",
+      "postDebugTask": "ui:stop",
+      "cascadeTerminateToConfigurations": ["ui:dev-inspect"]
+    },
+    {
       "name": "Next.js: debug full stack",
       "type": "node",
       "request": "launch",
@@ -44,6 +55,20 @@
         "uriFormat": "%s",
         "webRoot": "${workspaceFolder}"
       }
+    },
+    {
+      "name": "Jest: debug tests",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "jest", "--runInBand", "--watchAll=false"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "FORCE_COLOR": "true"
+      },
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "lldb",
